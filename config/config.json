@@ -42,17 +42,17 @@
     "output_dir": "recordings"
   },
   "dump": {
-    "enabled": true,
+    "enabled": false,
     "markdown_file": "~/Documents/Obsidian/Daily Notes/YYYY-MM-DD.md",
     "append": true,
     "include_timestamp": true
   },
   "continuous_dump": {
-    "enabled": true
+    "enabled": false
   },
   "llm_output": {
     "paste": "clipboard",
-    "dump": "dump",
+    "dump": "clipboard",
     "bluetooth": "clipboard"
   },
   "bluetooth_keyboard": {
@@ -89,7 +89,7 @@
     "enabled": true
   },
   "hermes_agent": {
-    "enabled": true,
+    "enabled": false,
     "executable": "hermes",
     "session_name": "local-audio-voice-agent",
     "workdir": "~",

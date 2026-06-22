@@ -68,7 +68,7 @@ def main() -> int:
         ("selected tab", hermes, "interactive Hermes session must reuse existing Terminal tabs"),
         ("struct AudioDuckingConfig", app_config, "config must expose audio ducking"),
         ("struct HermesAgentConfig", app_config, "config must expose Hermes agent settings"),
-        ("Hermes Agent aktivieren?", wizard, "setup wizard must let users enable or disable Hermes Agent"),
+        ("Enable Hermes Agent?", wizard, "setup wizard must let users enable or disable Hermes Agent"),
         ("Hermes Agent Trigger", wizard, "setup wizard must explain the Hermes trigger"),
         ("tryBeginCoreAudio", ducker, "ducker must attempt CoreAudio mute/volume"),
         ("tryBeginAppleScript", ducker, "ducker must include AppleScript fallback"),

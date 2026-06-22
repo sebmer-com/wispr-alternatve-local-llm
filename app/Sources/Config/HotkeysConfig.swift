@@ -309,8 +309,8 @@ struct HotkeyConfig: Codable {
     var displayName: String {
         var parts: [String] = []
         if control { parts.append("Control") }
-        if option { parts.append("Option") }
         if command { parts.append("Command") }
+        if option { parts.append("Option") }
         if shift { parts.append("Shift") }
         return parts.isEmpty ? "no modifiers" : parts.joined(separator: " + ")
     }

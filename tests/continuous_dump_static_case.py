@@ -20,8 +20,8 @@ def main() -> int:
 
     checks = [
         (
-            continuous_dump.get("enabled") is True,
-            "continuous_dump.enabled must default to true",
+            continuous_dump.get("enabled") is False,
+            "continuous_dump.enabled must default to false for Simple Setup",
         ),
         (
             "struct ContinuousDumpConfig" in config_source,

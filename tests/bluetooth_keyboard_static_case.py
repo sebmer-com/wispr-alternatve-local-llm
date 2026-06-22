@@ -16,7 +16,7 @@ def main() -> int:
     checks = [
         (config.get("llm_output") == {
             "paste": "clipboard",
-            "dump": "dump",
+            "dump": "clipboard",
             "bluetooth": "clipboard",
          }, "Bluetooth output must stay local until the Bluetooth hotkey is explicitly enabled"),
         (config.get("hotkeys", {}).get("bluetooth", {}).get("keys")
@@ -43,9 +43,9 @@ def main() -> int:
         ("static let defaultBluetoothKey = HotkeyKey.rightShift" in (REPO_ROOT / "app" / "Sources" / "Config" / "HotkeysConfig.swift").read_text(encoding="utf-8")
          and "static func parse(_ value: String) -> HotkeyKey?" in (REPO_ROOT / "app" / "Sources" / "Config" / "HotkeysConfig.swift").read_text(encoding="utf-8"),
          "hotkey configuration must support explicit Bluetooth key setup with a right Shift fallback"),
-        ("Bluetooth Shortcut-Key" in (REPO_ROOT / "app" / "Sources" / "CLI" / "ConfigWizard.swift").read_text(encoding="utf-8")
-         and "Enter fuer Default" in (REPO_ROOT / "app" / "Sources" / "CLI" / "ConfigWizard.swift").read_text(encoding="utf-8"),
-         "onboarding must prompt for a Bluetooth key with Enter as the default"),
+        ("Bluetooth shortcut key" in (REPO_ROOT / "app" / "Sources" / "CLI" / "ConfigWizard.swift").read_text(encoding="utf-8")
+         and "Enable Bluetooth keyboard output?" in (REPO_ROOT / "app" / "Sources" / "CLI" / "ConfigWizard.swift").read_text(encoding="utf-8"),
+         "advanced onboarding must prompt for a Bluetooth key in English"),
         ("logOutputConfiguration(options: options)" in runtime
          and "Output-Konfiguration:" in runtime
          and "locationDisplayName" in app_config,

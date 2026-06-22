@@ -24,54 +24,62 @@ enum ConfigWizard {
 
         printHeader("Local Audio Setup")
         let profile = input.choose(
-            prompt: "Profil auswaehlen",
+            prompt: "Choose setup mode",
             options: [
-                "Schnellstart: OpenAI-kompatibel + lokale Paste + Markdown + Bluetooth aus",
-                "Power User: alles konfigurieren",
-                "Minimal: nur Diktat/Paste, Command-LLM aus",
+                "Simple Setup (recommended)",
+                "Advanced Setup",
             ],
-            defaultIndex: 0
+            defaultIndex: 0,
+            marksDefaultOption: false
         )
 
         var secretUpdates: [String: String] = [:]
         switch profile {
         case 0:
-            applyQuickStart(to: &config)
-            configureRemoteToken(config: &config, input: input, secretUpdates: &secretUpdates)
-            configureHermesAgent(config: &config, input: input)
-            configureDailyNote(config: &config, input: input)
-        case 1:
+            printModeDescription(
+                "Dictate text, paste transcripts, and optionally use command mode with an OpenAI-compatible API."
+            )
+            applySimpleSetup(to: &config)
+            configureOpenAICompatible(
+                config: &config,
+                input: input,
+                secretUpdates: &secretUpdates,
+                choosePreset: false
+            )
+            configurePasteShortcut(config: &config, input: input)
+        default:
+            printModeDescription(
+                "Configure provider, shortcuts, command mode, Markdown dump, Hermes Agent, Bluetooth keyboard output, and paths."
+            )
+            applyAdvancedSetup(to: &config)
             configureCommandLLM(config: &config, input: input, secretUpdates: &secretUpdates)
             configureShortcuts(config: &config, input: input)
             configureHermesAgent(config: &config, input: input)
             configureBluetooth(config: &config, input: input)
             configureOutputs(config: &config, input: input)
             configureDailyNote(config: &config, input: input)
-        default:
-            applyMinimal(to: &config)
-            configureDailyNote(config: &config, input: input)
         }
 
-        review(config: config, paths: paths)
-        guard input.confirm(prompt: "Diese Konfiguration speichern?", defaultValue: true) else {
-            print("Abgebrochen. Es wurde nichts geschrieben.")
+        review(config: config, paths: paths, includeAdvanced: profile == 1)
+        guard input.confirm(prompt: "Save this configuration?", defaultValue: true) else {
+            print("Canceled. No changes were written.")
             return
         }
 
         try ConfigWriter.write(config: config, paths: paths, secretUpdates: secretUpdates)
-        print("Setup gespeichert: \(paths.configURL.path)")
+        print("Setup saved: \(paths.configURL.path)")
     }
 
     static func runConfigMenu(configPath: URL?) throws {
         let input = WizardInput()
         printHeader("Local Audio Config")
         let choice = input.choose(
-            prompt: "Was moechtest du tun?",
+            prompt: "What would you like to do?",
             options: [
-                "Konfiguration bearbeiten",
-                "Konfiguration anzeigen",
-                "Doctor ausfuehren",
-                "Hard Reset auf sichere Defaults",
+                "Edit configuration",
+                "Show configuration",
+                "Run doctor",
+                "Hard reset to safe defaults",
             ],
             defaultIndex: 0
         )
@@ -81,8 +89,8 @@ enum ConfigWizard {
         case 2:
             try doctor(configPath: configPath)
         case 3:
-            guard input.confirm(prompt: "Config und lokale Secrets wirklich zuruecksetzen?", defaultValue: false) else {
-                print("Abgebrochen. Es wurde nichts geschrieben.")
+            guard input.confirm(prompt: "Reset config and local secrets?", defaultValue: false) else {
+                print("Canceled. No changes were written.")
                 return
             }
             try reset(configPath: configPath, confirmed: true)
@@ -276,7 +284,7 @@ enum ConfigWizard {
 
     private static func freshDefaultConfig() -> AppConfig {
         var config = AppConfig()
-        applyQuickStart(to: &config)
+        applySimpleSetup(to: &config)
         normalizeInstallLocalDefaults(&config)
         return config
     }
@@ -297,7 +305,7 @@ enum ConfigWizard {
         config.bluetoothKeyboard.chunkSize = 32
     }
 
-    private static func applyQuickStart(to config: inout AppConfig) {
+    private static func applySimpleSetup(to config: inout AppConfig) {
         config.localLLM.enabled = true
         config.localLLM.commandGenerationEnabled = true
         config.localLLM.provider = .openAICompatible
@@ -309,22 +317,17 @@ enum ConfigWizard {
         config.hotkeys.dump = HotkeyConfig(control: true, option: true, command: false, shift: false)
         config.hotkeys.bluetooth = KeyChordConfig(keys: [], enabled: false)
         config.llmOutput.paste = .clipboard
-        config.llmOutput.dump = .dump
-        config.llmOutput.bluetooth = .clipboard
-    }
-
-    private static func applyMinimal(to config: inout AppConfig) {
-        config.localLLM.enabled = false
-        config.localLLM.commandGenerationEnabled = false
-        config.dump.enabled = false
-        config.continuousDump.enabled = false
-        config.hotkeys.paste = HotkeyConfig(control: false, option: true, command: true, shift: false)
-        config.hotkeys.dump = HotkeyConfig(control: true, option: true, command: false, shift: false)
-        config.hotkeys.bluetooth = KeyChordConfig(keys: [], enabled: false)
-        config.llmOutput.paste = .clipboard
         config.llmOutput.dump = .clipboard
         config.llmOutput.bluetooth = .clipboard
+        config.dump.enabled = false
+        config.continuousDump.enabled = false
         config.hermesAgent.enabled = false
+    }
+
+    private static func applyAdvancedSetup(to config: inout AppConfig) {
+        config.dump.enabled = true
+        config.continuousDump.enabled = true
+        config.llmOutput.dump = .dump
     }
 
     private static func configureCommandLLM(
@@ -333,12 +336,12 @@ enum ConfigWizard {
         secretUpdates: inout [String: String]
     ) {
         let choice = input.choose(
-            prompt: "Command-LLM auswaehlen",
+            prompt: "Choose command LLM provider",
             options: [
-                "OpenAI-kompatibel",
+                "OpenAI-compatible API",
                 "Azure DeepSeek-V4-Flash",
-                "Lokales MLX/Bonsai",
-                "Deaktiviert",
+                "Local MLX/Bonsai",
+                "Disabled",
             ],
             defaultIndex: 0
         )
@@ -377,31 +380,36 @@ enum ConfigWizard {
     private static func configureOpenAICompatible(
         config: inout AppConfig,
         input: WizardInput,
-        secretUpdates: inout [String: String]
+        secretUpdates: inout [String: String],
+        choosePreset: Bool = true
     ) {
-        let preset = input.choose(
-            prompt: "OpenAI-kompatibles API-Preset",
-            options: [
-                "OpenAI API",
-                "OpenRouter",
-                "Groq",
-                "LM Studio lokal",
-                "Custom",
-            ],
-            defaultIndex: 0
-        )
-
         let defaults: (baseURL: String, model: String, apiKeyEnv: String)
-        switch preset {
-        case 1:
-            defaults = ("https://openrouter.ai/api/v1", "openai/gpt-5.4-mini", defaultOpenAIAPIKeyEnv)
-        case 2:
-            defaults = ("https://api.groq.com/openai/v1", "openai/gpt-oss-20b", defaultOpenAIAPIKeyEnv)
-        case 3:
-            defaults = ("http://localhost:1234/v1", "local-model", "")
-        case 4:
-            defaults = ("https://api.example.com/v1", "", defaultOpenAIAPIKeyEnv)
-        default:
+        if choosePreset {
+            let preset = input.choose(
+                prompt: "OpenAI-compatible API preset",
+                options: [
+                    "OpenAI API",
+                    "OpenRouter",
+                    "Groq",
+                    "Local LM Studio",
+                    "Custom",
+                ],
+                defaultIndex: 0
+            )
+
+            switch preset {
+            case 1:
+                defaults = ("https://openrouter.ai/api/v1", "openai/gpt-5.4-mini", defaultOpenAIAPIKeyEnv)
+            case 2:
+                defaults = ("https://api.groq.com/openai/v1", "openai/gpt-oss-20b", defaultOpenAIAPIKeyEnv)
+            case 3:
+                defaults = ("http://localhost:1234/v1", "local-model", "")
+            case 4:
+                defaults = ("https://api.example.com/v1", "", defaultOpenAIAPIKeyEnv)
+            default:
+                defaults = (defaultOpenAIBaseURL, defaultOpenAIModel, defaultOpenAIAPIKeyEnv)
+            }
+        } else {
             defaults = (defaultOpenAIBaseURL, defaultOpenAIModel, defaultOpenAIAPIKeyEnv)
         }
 
@@ -409,14 +417,14 @@ enum ConfigWizard {
         config.localLLM.commandGenerationEnabled = true
         config.localLLM.provider = .openAICompatible
         config.localLLM.endpoint = ""
-        config.localLLM.baseURL = input.prompt("Base URL ohne /chat/completions", defaultValue: defaults.baseURL)
+        config.localLLM.baseURL = input.prompt("Base URL without /chat/completions", defaultValue: defaults.baseURL)
         if defaults.model.isEmpty {
             config.localLLM.model = input.promptRequired("Model name/slug")
         } else {
             config.localLLM.model = input.prompt("Model name/slug", defaultValue: defaults.model)
         }
         config.localLLM.apiKeyEnv = input.prompt(
-            "API key env name, leer fuer lokale Server ohne Token",
+            "API key env name, leave empty for local servers without a token",
             defaultValue: defaults.apiKeyEnv
         )
         configureRemoteToken(config: &config, input: input, secretUpdates: &secretUpdates)
@@ -431,25 +439,29 @@ enum ConfigWizard {
         guard !envName.isEmpty else {
             return
         }
-        let token = input.secret("API token fuer \(envName) leer lassen zum Behalten")
+        let token = input.secret("API token for \(envName) (leave blank to keep current)")
         if !token.isEmpty {
             secretUpdates[envName] = token
         }
     }
 
-    private static func configureShortcuts(config: inout AppConfig, input: WizardInput) {
+    private static func configurePasteShortcut(config: inout AppConfig, input: WizardInput) {
         config.hotkeys.paste = chooseModifierShortcut(
             label: "Paste Shortcut",
             input: input,
             defaultConfig: config.hotkeys.paste
         )
+    }
+
+    private static func configureShortcuts(config: inout AppConfig, input: WizardInput) {
+        configurePasteShortcut(config: &config, input: input)
         config.hotkeys.dump = chooseModifierShortcut(
             label: "Dump Shortcut",
             input: input,
             defaultConfig: config.hotkeys.dump
         )
         if config.hotkeys.paste.displayName == config.hotkeys.dump.displayName {
-            print("WARN Paste und Dump verwenden denselben Shortcut.")
+            print("WARN Paste and Dump use the same shortcut.")
         }
     }
 
@@ -458,35 +470,38 @@ enum ConfigWizard {
         input: WizardInput,
         defaultConfig: HotkeyConfig
     ) -> HotkeyConfig {
+        let alternate = defaultConfig.command
+            ? HotkeyConfig(control: true, option: true, command: false, shift: false)
+            : HotkeyConfig(control: false, option: true, command: true, shift: false)
         let choice = input.choose(
-            prompt: "\(label) auswaehlen",
+            prompt: "Configure \(label)",
             options: [
-                "Command + Option",
-                "Control + Option",
-                "Custom Capture",
+                "Keep default: \(defaultConfig.displayName)",
+                "Use preset: \(alternate.displayName)",
+                "Capture custom shortcut",
             ],
-            defaultIndex: defaultConfig.command ? 0 : 1
+            defaultIndex: 0
         )
         switch choice {
         case 1:
-            return HotkeyConfig(control: true, option: true, command: false, shift: false)
+            return alternate
         case 2:
-            print("Halte jetzt den gewuenschten Modifier-Shortcut.")
+            print("Hold the shortcut now. Release when captured.")
             if case let .modifier(config)? = ShortcutCapture.capture() {
                 print("Captured: \(config.displayName)")
                 return config
             }
-            print("Capture fehlgeschlagen; behalte \(defaultConfig.displayName).")
+            print("Capture timed out. Keeping \(defaultConfig.displayName).")
             return defaultConfig
         default:
-            return HotkeyConfig(control: false, option: true, command: true, shift: false)
+            return defaultConfig
         }
     }
 
     private static func configureHermesAgent(config: inout AppConfig, input: WizardInput) {
         print("\nHermes Agent Trigger: \(hermesTriggerSummary(config.hotkeys))")
         let enabled = input.confirm(
-            prompt: "Hermes Agent aktivieren?",
+            prompt: "Enable Hermes Agent?",
             defaultValue: config.hermesAgent.enabled
         )
         config.hermesAgent.enabled = enabled
@@ -494,7 +509,7 @@ enum ConfigWizard {
             return
         }
 
-        guard input.confirm(prompt: "Hermes Agent Details anpassen?", defaultValue: false) else {
+        guard input.confirm(prompt: "Customize Hermes Agent details?", defaultValue: false) else {
             return
         }
 
@@ -511,7 +526,7 @@ enum ConfigWizard {
             defaultValue: config.hermesAgent.workdir
         )
         config.hermesAgent.foregroundTerminal = input.confirm(
-            prompt: "Hermes im Terminal sichtbar oeffnen?",
+            prompt: "Open Hermes in a visible Terminal window?",
             defaultValue: config.hermesAgent.foregroundTerminal
         )
         let timeout = input.prompt(
@@ -524,7 +539,7 @@ enum ConfigWizard {
     }
 
     private static func configureBluetooth(config: inout AppConfig, input: WizardInput) {
-        let enabled = input.confirm(prompt: "Bluetooth Keyboard aktivieren?", defaultValue: config.hotkeys.bluetooth.isEnabled)
+        let enabled = input.confirm(prompt: "Enable Bluetooth keyboard output?", defaultValue: config.hotkeys.bluetooth.isEnabled)
         guard enabled else {
             config.hotkeys.bluetooth = KeyChordConfig(keys: [], enabled: false)
             config.llmOutput.bluetooth = .clipboard
@@ -537,17 +552,17 @@ enum ConfigWizard {
 
         let ports = detectedBluetoothPorts()
         if ports.count == 1 {
-            print("Gefundener Port: \(ports[0])")
-            if input.confirm(prompt: "Diesen Port fest speichern?", defaultValue: false) {
+            print("Detected port: \(ports[0])")
+            if input.confirm(prompt: "Save this port explicitly?", defaultValue: false) {
                 config.bluetoothKeyboard.port = ports[0]
             }
         } else if ports.count > 1 {
-            let index = input.choose(prompt: "Bluetooth-Port auswaehlen", options: ports, defaultIndex: 0)
+            let index = input.choose(prompt: "Choose Bluetooth port", options: ports, defaultIndex: 0)
             config.bluetoothKeyboard.port = ports[index]
         } else {
-            config.bluetoothKeyboard.port = input.prompt("Bluetooth-Port manuell, leer fuer Auto-Detect", defaultValue: "")
+            config.bluetoothKeyboard.port = input.prompt("Bluetooth port, leave empty for auto-detect", defaultValue: "")
         }
-        if input.confirm(prompt: "Advanced: Chunk size aendern?", defaultValue: false) {
+        if input.confirm(prompt: "Advanced: change chunk size?", defaultValue: false) {
             let raw = input.prompt("Chunk size 1-256", defaultValue: String(config.bluetoothKeyboard.chunkSize))
             if let value = Int(raw), (1...256).contains(value) {
                 config.bluetoothKeyboard.chunkSize = value
@@ -558,11 +573,11 @@ enum ConfigWizard {
     private static func chooseBluetoothShortcut(input: WizardInput, defaultKey: HotkeyKey?) -> HotkeyKey {
         let fallback = defaultKey?.keyCode == nil ? HotkeyKey.defaultBluetoothKey : (defaultKey ?? .defaultBluetoothKey)
         let raw = input.prompt(
-            "Bluetooth Shortcut-Key, z.B. f18, right_shift, right_option; Enter fuer Default",
+            "Bluetooth shortcut key, for example f18, right_shift, right_option",
             defaultValue: fallback.rawValue
         )
         guard let key = HotkeyKey.parse(raw) else {
-            print("WARN Unbekannter Bluetooth-Key '\(raw)'; verwende \(fallback.rawValue).")
+            print("WARN Unknown Bluetooth key '\(raw)'; using \(fallback.rawValue).")
             return fallback
         }
         print("Bluetooth Shortcut: \(key.displayName)")
@@ -593,24 +608,31 @@ enum ConfigWizard {
     private static func configureDailyNote(config: inout AppConfig, input: WizardInput) {
         let current = config.dump.markdownFile
         let suggested = current.isEmpty || isLegacyBundledDailyNotePath(current) ? defaultDailyNotePath : current
-        config.dump.markdownFile = input.prompt("Daily Note Pfad", defaultValue: suggested)
+        config.dump.markdownFile = input.prompt("Daily note path", defaultValue: suggested)
     }
 
     private static func isLegacyBundledDailyNotePath(_ path: String) -> Bool {
         path.contains("OneDrive-Personal/Obsidian/") && path.contains("Daily Notes/")
     }
 
-    private static func review(config: AppConfig, paths: ConfigPaths) {
+    private static func review(config: AppConfig, paths: ConfigPaths, includeAdvanced: Bool) {
         printHeader("Review")
         print("Config: \(paths.configURL.path)")
         print("Command LLM: \(llmSummary(config.localLLM))")
-        print("Paste: \(config.hotkeys.paste.displayName) -> \(config.llmOutput.paste.rawValue)")
-        print("Dump: \(config.hotkeys.dump.displayName) -> \(config.llmOutput.dump.rawValue)")
-        print("Bluetooth: \(config.hotkeys.bluetooth.isEnabled ? config.hotkeys.bluetooth.displayName : "disabled") -> \(config.llmOutput.bluetooth.rawValue)")
-        print("Hermes Agent: \(hermesSummary(config.hermesAgent, hotkeys: config.hotkeys))")
-        print("Daily note: \(config.dump.markdownFile)")
+        print("Paste shortcut: \(config.hotkeys.paste.displayName) -> \(config.llmOutput.paste.rawValue)")
+        if includeAdvanced {
+            print("Dump shortcut: \(config.hotkeys.dump.displayName) -> \(config.llmOutput.dump.rawValue)")
+            print("Bluetooth: \(config.hotkeys.bluetooth.isEnabled ? config.hotkeys.bluetooth.displayName : "disabled") -> \(config.llmOutput.bluetooth.rawValue)")
+            print("Hermes Agent: \(hermesSummary(config.hermesAgent, hotkeys: config.hotkeys))")
+            print("Daily note: \(config.dump.markdownFile)")
+        }
         print("Skills: \(config.skills.directory)")
         print("Secret file: \(paths.dotenvURL.path)")
+    }
+
+    private static func printModeDescription(_ text: String) {
+        print("")
+        print(text)
     }
 
     private static func printHeader(_ text: String) {
@@ -641,7 +663,7 @@ enum ConfigWizard {
     }
 
     private static func hermesTriggerSummary(_ hotkeys: HotkeysConfig) -> String {
-        "\(hotkeys.paste.displayName) halten, Command loslassen, Option weiter halten"
+        "hold \(hotkeys.paste.displayName), release Command, keep holding Option"
     }
 
     private static func masked(_ value: String) -> String {
@@ -798,26 +820,26 @@ struct DoctorCheck {
 }
 
 final class WizardInput {
-    func choose(prompt: String, options: [String], defaultIndex: Int) -> Int {
+    func choose(prompt: String, options: [String], defaultIndex: Int, marksDefaultOption: Bool = true) -> Int {
         while true {
             print("\n\(prompt)")
             for (index, option) in options.enumerated() {
-                let marker = index == defaultIndex ? " (default)" : ""
+                let marker = marksDefaultOption && index == defaultIndex ? " (default)" : ""
                 print("  \(index + 1)) \(option)\(marker)")
             }
-            print("Auswahl [\(defaultIndex + 1)] (b zurueck nicht verfuegbar, q abbrechen): ", terminator: "")
+            print("Selection [\(defaultIndex + 1)] (q to quit): ", terminator: "")
             let value = readTrimmedLine()
             if value.isEmpty {
                 return defaultIndex
             }
             if value.lowercased() == "q" {
-                print("Abgebrochen.")
+                print("Canceled. No changes were written.")
                 exit(0)
             }
             if let number = Int(value), (1...options.count).contains(number) {
                 return number - 1
             }
-            print("Ungueltige Auswahl.")
+            print("Invalid selection.")
         }
     }
 
@@ -828,7 +850,7 @@ final class WizardInput {
         if value.isEmpty {
             return defaultValue
         }
-        return ["y", "yes", "j", "ja"].contains(value)
+        return ["y", "yes"].contains(value)
     }
 
     func prompt(_ prompt: String, defaultValue: String) -> String {
@@ -844,7 +866,7 @@ final class WizardInput {
             if !value.isEmpty {
                 return value
             }
-            print("Dieses Feld ist erforderlich.")
+            print("This field is required.")
         }
     }
 
