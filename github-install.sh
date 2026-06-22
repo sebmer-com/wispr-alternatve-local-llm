@@ -28,6 +28,7 @@ Environment:
   LOCAL_AUDIO_GITHUB_REF           Override ref. Default: ${DEFAULT_GITHUB_REF}
   LOCAL_AUDIO_GITHUB_RAW_BASE_URL  Override raw GitHub base URL.
   LOCAL_AUDIO_SOURCE_DIR           Override clone/update directory. Default: ${SOURCE_DIR}
+  LOCAL_AUDIO_INSTALL_STDIN        Set to inherit to keep piped stdin instead of /dev/tty.
 EOF
 }
 
@@ -86,6 +87,10 @@ else
   rm -rf "${SOURCE_DIR}"
   info "Cloning ${GITHUB_REPO}@${GITHUB_REF} into ${SOURCE_DIR}"
   git clone --depth 1 --branch "${GITHUB_REF}" "https://github.com/${GITHUB_REPO}.git" "${SOURCE_DIR}"
+fi
+
+if [[ "${LOCAL_AUDIO_INSTALL_STDIN:-tty}" != "inherit" && -r /dev/tty ]]; then
+  exec "${INSTALL_CMD[@]}" < /dev/tty
 fi
 
 exec "${INSTALL_CMD[@]}"

@@ -46,6 +46,8 @@ def main() -> int:
         ("--print-command", "github installer must expose a dry command print path"),
         ('command -v git', "github installer must validate git"),
         ('command -v swift', "github installer must validate swift"),
+        ('exec "${INSTALL_CMD[@]}" < /dev/tty', "github installer must reopen terminal stdin for interactive setup"),
+        ('LOCAL_AUDIO_INSTALL_STDIN', "github installer must expose a noninteractive stdin override"),
     ]:
         failed |= require(needle in github_install, message)
 
