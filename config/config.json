@@ -1,0 +1,99 @@
+{
+  "prompt_config_file": "promptConfig.json",
+  "text_replacements_file": "textReplacements.json",
+  "debug": {
+    "enabled": false,
+    "log_llm_requests": false
+  },
+  "asr": {
+    "model_version": "v3",
+    "language": "de"
+  },
+  "audio_input": {
+    "device_uid": "",
+    "device_name": ""
+  },
+  "hotkeys": {
+    "paste": {
+      "control": false,
+      "option": true,
+      "command": true,
+      "shift": false
+    },
+    "dump": {
+      "control": true,
+      "option": true,
+      "command": false,
+      "shift": false
+    },
+    "bluetooth": {
+      "enabled": false,
+      "keys": []
+    }
+  },
+  "paste": {
+    "enabled": true,
+    "restore_clipboard": true,
+    "paste_delay": 0.1,
+    "restore_clipboard_delay": 0.5
+  },
+  "recordings": {
+    "save": false,
+    "output_dir": "recordings"
+  },
+  "dump": {
+    "enabled": true,
+    "markdown_file": "~/Documents/Obsidian/Daily Notes/YYYY-MM-DD.md",
+    "append": true,
+    "include_timestamp": true
+  },
+  "continuous_dump": {
+    "enabled": true
+  },
+  "llm_output": {
+    "paste": "clipboard",
+    "dump": "dump",
+    "bluetooth": "clipboard"
+  },
+  "bluetooth_keyboard": {
+    "port": null,
+    "chunk_size": 32
+  },
+  "skills": {
+    "enabled": true,
+    "directory": "skills",
+    "max_selected": 2,
+    "minimum_score": 2
+  },
+  "local_llm": {
+    "enabled": true,
+    "command_generation_enabled": true,
+    "provider": "openai_compatible",
+    "mlx_run": "mlx-run",
+    "llm_tool": "llm-tool",
+    "download": "~/Library/Application Support/FluidPushToTalk/Models",
+    "model": "gpt-5.4-mini",
+    "endpoint": "",
+    "base_url": "https://api.openai.com/v1",
+    "api_key_env": "OPENAI_API_KEY",
+    "temperature": 0,
+    "max_tokens": 128,
+    "cache_size": 4096,
+    "memory_size": 4096,
+    "timeout_seconds": 30,
+    "request_timeout_seconds": 15,
+    "max_retries": 1,
+    "dotenv_file": ".env"
+  },
+  "audio_ducking": {
+    "enabled": true
+  },
+  "hermes_agent": {
+    "enabled": true,
+    "executable": "hermes",
+    "session_name": "local-audio-voice-agent",
+    "workdir": "~",
+    "foreground_terminal": true,
+    "timeout_seconds": 900
+  }
+}

@@ -1,0 +1,36 @@
+# Swift build output
+.build/
+.swiftpm/
+DerivedData/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Build and packaging output
+build/
+dist/
+*.egg-info/
+
+# Local app output
+recordings/
+recordings-fluid/
+.env
+*.env
+
+# OS and editor files
+.DS_Store
+.vscode/
+.idea/

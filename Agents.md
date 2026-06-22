@@ -1,0 +1,4 @@
+- Run the tests in the tests folder after each change in the software
+- Skills must be according to the standard of: https://developers.openai.com/codex/skills
+- Speed is crucial for this software. especially for the LLM
+- Always restart the app in the terminal after you have done something so that the user can directly test the changes
