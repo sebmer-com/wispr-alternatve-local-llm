@@ -171,6 +171,7 @@ def main() -> int:
     if args.live_multi_image:
         checks.append(run("OpenAI five-image live regression", ["python3", "tests/provider_multi_image_live_case.py", "--provider", "openai"], timeout=100))
         checks.append(run("Cerebras five-image live regression", ["python3", "tests/provider_multi_image_live_case.py", "--provider", "cerebras"], timeout=100))
+        checks.append(run("Gemini five-image live regression", ["python3", "tests/provider_multi_image_live_case.py", "--provider", "gemini"], timeout=100))
     else:
         print(color("SKIP optional provider five-image live regressions", "33"))
 

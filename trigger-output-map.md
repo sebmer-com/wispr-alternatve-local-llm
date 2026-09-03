@@ -37,21 +37,23 @@ Stand: 2026-08-24
 
 ## Provider-Auswahl
 
-`command_provider` ist entweder:
+`command_provider` ist eines von:
 
 - `openai`: `https://api.openai.com/v1/responses`, `gpt-5.6-luna`, Reasoning `low`, Text-Verbosity `low`, `store: false`, Bilder mit `detail: low`.
 - `cerebras`: `https://api.cerebras.ai/v1/chat/completions`, `gemma-4-31b`, geordnete Bild-Data-URLs.
+- `gemini`: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`, `gemini-3.5-flash`, Auth-Header `x-goog-api-key` statt Bearer, geordnete `inlineData`-Bildteile ohne Data-URL-Praefix.
 
 Der Repository-Default ist `openai`. Die installierte User-Config auf diesem Mac ueberschreibt ihn mit `cerebras`. Setup schreibt nur die Auswahl in die User-Config und aktualisiert nur den dazugehoerigen Key in der benachbarten `.env`:
 
 - OpenAI: `OPENAI_API_KEY`
 - Cerebras: `CEREBRAS_API_KEY`
+- Gemini: `GEMINI_API_KEY`
 
-Ein Request verwendet ausschließlich den ausgewaehlten Provider. Nach einem Provider-Fehler gibt es weder einen Aufruf des anderen Providers noch Informationstext als Output. Eine leere Anweisung wird vor dem Request erkannt und liefert weiterhin die Information lokal aus.
+Ein Request verwendet ausschließlich den ausgewaehlten Provider. Nach einem Provider-Fehler gibt es weder einen Aufruf eines anderen Providers noch Informationstext als Output. Eine leere Anweisung wird vor dem Request erkannt und liefert weiterhin die Information lokal aus.
 
 ## Request-Diagnose
 
-OpenAI und Cerebras schreiben dasselbe strukturierte, schluesselwertbasierte Logformat. Eine logische `request_id` verbindet:
+OpenAI, Cerebras und Gemini schreiben dasselbe strukturierte, schluesselwertbasierte Logformat. Eine logische `request_id` verbindet:
 
 - Request: Provider, Modell, gesamte/System/User-Prompt-Zeichen, Bildanzahl, Payload-Bytes, Build-Dauer in ms und Timeout.
 - Bild: Index, lokaler Pfad, Bytes, MIME, Base64-Zeichenanzahl und SHA-256.
@@ -102,7 +104,7 @@ app/.build/debug/fluid-push-to-talk \
   --test-command-image screenshot.png
 ```
 
-Optionale Live-Checks fuer beide Provider mit fuenf Bildern:
+Optionale Live-Checks fuer alle drei Provider mit fuenf Bildern:
 
 ```bash
 python3 tests/run_all.py --skip-llm --live-multi-image

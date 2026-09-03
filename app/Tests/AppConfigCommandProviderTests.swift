@@ -21,4 +21,13 @@ final class AppConfigCommandProviderTests: XCTestCase {
 
         XCTAssertEqual(config.commandProvider, .cerebras)
     }
+
+    func testCommandProviderDecodesGemini() throws {
+        let config = try JSONDecoder().decode(
+            AppConfig.self,
+            from: Data(#"{"command_provider":"gemini"}"#.utf8)
+        )
+
+        XCTAssertEqual(config.commandProvider, .gemini)
+    }
 }

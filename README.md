@@ -1,6 +1,6 @@
 # FluidAudio Push To Talk
 
-FluidAudio Push To Talk is a native macOS 14+ voice-dictation app for Apple Silicon. Audio transcription runs locally with FluidAudio/CoreML. Two-stage spoken commands use either OpenAI or Cerebras, selected during setup.
+FluidAudio Push To Talk is a native macOS 14+ voice-dictation app for Apple Silicon. Audio transcription runs locally with FluidAudio/CoreML. Two-stage spoken commands use OpenAI, Cerebras, or Gemini, selected during setup.
 
 ## Features
 
@@ -9,6 +9,7 @@ FluidAudio Push To Talk is a native macOS 14+ voice-dictation app for Apple Sili
 - Up to five optional screenshots, captured explicitly with physical `P` during the first `Command + Option` or `Control + Option` segment.
 - OpenAI Responses with `gpt-5.6-luna`, low reasoning, and low-detail images.
 - Cerebras Chat Completions with `gemma-4-31b`.
+- Gemini `generateContent` with `gemini-3.5-flash`.
 - `Control + Option` selectable as Markdown Dump or one-segment Hermes Agent mode, plus optional ESP32 Bluetooth output.
 
 See [appBehavior.md](appBehavior.md) for exact shortcut behavior.
@@ -35,7 +36,7 @@ The setup wizard asks for:
 
 1. Transcription language.
 2. Paste shortcut.
-3. Command provider: OpenAI or Cerebras.
+3. Command provider: OpenAI, Cerebras, or Gemini.
 4. The selected provider's API key, entered without echo.
 5. `Control + Option`: Markdown Dump or Hermes Agent.
 
@@ -45,6 +46,7 @@ Secrets are stored in `.env` beside the active user config, normally `~/.config/
 
 - OpenAI reads `OPENAI_API_KEY`.
 - Cerebras reads `CEREBRAS_API_KEY`.
+- Gemini reads `GEMINI_API_KEY`.
 
 Changing providers does not delete the other key. At request time the app calls only the selected provider; it never falls back across providers.
 
@@ -93,7 +95,14 @@ With zero `P` presses, the command request contains no images. Releasing both mo
 - Model: `gemma-4-31b`
 - Image input: ordered Base64 data URLs in Chat Completions content parts
 
-Both clients accept zero through five images in capture order. If the selected provider returns an error after its own retry handling, the app logs the failure and produces no command output. It does not call the other provider and does not paste the information transcript as an error fallback. An empty spoken instruction remains a pre-request case and delivers the information transcript locally.
+### Gemini
+
+- Endpoint: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`
+- Model: `gemini-3.5-flash`
+- Auth header: `x-goog-api-key` (not Bearer auth)
+- Image input: ordered Base64 `inlineData` parts alongside the text part, no data-URL prefix
+
+All three clients accept zero through five images in capture order. If the selected provider returns an error after its own retry handling, the app logs the failure and produces no command output. It does not call another provider and does not paste the information transcript as an error fallback. An empty spoken instruction remains a pre-request case and delivers the information transcript locally.
 
 Every provider request emits structured diagnostics under one logical `request_id`. Request fields are `provider`, `model`, `prompt_chars`, `system_prompt_chars`, `user_prompt_chars`, `image_count`, `timeout_seconds`, `payload_bytes`, and `build_duration_ms`. Each image adds `index`, `path`, `bytes`, `mime`, `base64_chars`, and `sha256`. Attempt/result fields include `attempt=n/max`, `outcome`, `duration_ms`, `http_status`, `response_bytes`, and `response_request_id`; retries add `retry_reason`, and terminal failures add `error_domain` plus `error_code`.
 
@@ -173,7 +182,7 @@ Without live API credentials:
 python3 tests/run_all.py --skip-llm
 ```
 
-Optional five-image live checks for both configured credentials:
+Optional five-image live checks for all configured credentials:
 
 ```bash
 python3 tests/run_all.py --skip-llm --live-multi-image

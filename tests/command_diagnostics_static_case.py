@@ -14,7 +14,7 @@ def main() -> int:
     store = store_path.read_text(encoding="utf-8") if store_path.exists() else ""
     all_clients = "\n".join(
         path.read_text(encoding="utf-8")
-        for directory in [SOURCES / "OpenAI", SOURCES / "Cerebras"]
+        for directory in [SOURCES / "OpenAI", SOURCES / "Cerebras", SOURCES / "Gemini"]
         for path in directory.glob("*.swift")
     )
     networking_source = diagnostics + "\n" + all_clients

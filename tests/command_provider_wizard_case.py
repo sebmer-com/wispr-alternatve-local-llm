@@ -70,6 +70,22 @@ def main() -> int:
     failed |= require("OPENAI_API_KEY=keep-openai" in dotenv, "Cerebras selection must preserve OPENAI_API_KEY")
     failed |= require(cerebras_key not in cerebras.stdout + cerebras.stderr, "hidden Cerebras key must not be echoed")
 
+    gemini_key = "AIzaSy-gemini-new-test-value"
+    gemini, config, dotenv = run_setup(
+        "3",
+        gemini_key,
+        "1",
+        "OPENAI_API_KEY=keep-openai\nCEREBRAS_API_KEY=keep-cerebras\nGEMINI_API_KEY=old-gemini\n",
+    )
+    failed |= require(gemini.returncode == 0, "piped Gemini onboarding must succeed")
+    failed |= require(config.get("command_provider") == "gemini", "Gemini selection must write command_provider=gemini")
+    failed |= require(config.get("control_option_mode") == "dump", "Markdown selection must write control_option_mode=dump")
+    failed |= require(config.get("dump", {}).get("enabled") is True, "Markdown selection must enable dump output")
+    failed |= require(f"GEMINI_API_KEY={gemini_key}" in dotenv, "Gemini selection must update GEMINI_API_KEY")
+    failed |= require("OPENAI_API_KEY=keep-openai" in dotenv, "Gemini selection must preserve OPENAI_API_KEY")
+    failed |= require("CEREBRAS_API_KEY=keep-cerebras" in dotenv, "Gemini selection must preserve CEREBRAS_API_KEY")
+    failed |= require(gemini_key not in gemini.stdout + gemini.stderr, "hidden Gemini key must not be echoed")
+
     return 1 if failed else 0
 
 

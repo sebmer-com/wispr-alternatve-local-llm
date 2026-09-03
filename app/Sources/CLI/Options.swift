@@ -227,7 +227,7 @@ struct Options {
             Control + Option is selected during setup: Markdown Dump writes the transcript plus optional P screenshots, while Hermes sends one spoken instruction plus optional P screenshots to a visible Hermes session.
             In Markdown mode, release Control first while holding Option to record a provider command. The provider receives text only; its result and the captured screenshots are written to Markdown.
             After launch, type go and stop in the app Terminal for stop-triggered Obsidian recording. Press Tab to autocomplete terminal commands.
-            Choose OpenAI Responses with fixed gpt-5.6-luna, low reasoning, and low-detail screenshots, or Cerebras with fixed gemma-4-31b. OpenClaw is not a runtime option.
+            Choose OpenAI Responses with fixed gpt-5.6-luna, low reasoning, and low-detail screenshots, Cerebras with fixed gemma-4-31b, or Gemini with fixed gemini-3.5-flash. OpenClaw is not a runtime option.
             Bluetooth push-to-talk is disabled by default; enable it in setup and choose a shortcut key.
 
             Options:

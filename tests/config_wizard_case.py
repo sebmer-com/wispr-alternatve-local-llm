@@ -45,6 +45,7 @@ def main() -> int:
         ("Choose command provider", wizard, "onboarding must ask for a command provider"),
         ("OpenAI", wizard, "onboarding must offer OpenAI"),
         ("Cerebras", wizard, "onboarding must offer Cerebras"),
+        ("Gemini", wizard, "onboarding must offer Gemini"),
         ("full-desktop screenshot", wizard, "onboarding must explain screenshot context"),
         ("Request Screen Recording permission now?", wizard, "onboarding must offer Screen Recording permission"),
         ("every mode continues with text only.", wizard, "onboarding must explain text-only fallback"),
@@ -60,6 +61,7 @@ def main() -> int:
         ('case controlOptionMode = "control_option_mode"', config_source, "control_option_mode config key is missing"),
         ("gpt-5.6-luna", options, "CLI help must explain the OpenAI model"),
         ("gemma-4-31b", options, "CLI help must explain the Cerebras model"),
+        ("gemini-3.5-flash", options, "CLI help must explain the Gemini model"),
     ]:
         failed |= require(needle in source, message)
 

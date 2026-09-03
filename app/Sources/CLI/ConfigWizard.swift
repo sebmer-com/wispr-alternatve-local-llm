@@ -373,13 +373,14 @@ enum ConfigWizard {
     }
 
     private static func configureCommandProvider(config: inout AppConfig, input: WizardInput) {
-        let providers: [CommandProvider] = [.openAI, .cerebras]
+        let providers: [CommandProvider] = [.openAI, .cerebras, .gemini]
         let defaultIndex = providers.firstIndex(of: config.commandProvider) ?? 0
         let choice = input.choose(
             prompt: "Choose command provider",
             options: [
                 "OpenAI — gpt-5.6-luna, low reasoning, low-detail screenshots",
                 "Cerebras — gemma-4-31b",
+                "Gemini — gemini-3.5-flash",
             ],
             defaultIndex: defaultIndex
         )
@@ -633,6 +634,8 @@ enum ConfigWizard {
             return "OpenAI Responses \(OpenAISecrets.model), reasoning=\(OpenAISecrets.reasoningEffort), screenshots=up to 5, detail=\(OpenAISecrets.imageDetail)"
         case .cerebras:
             return "Cerebras Chat Completions \(CerebrasSecrets.model), screenshots=up to 5"
+        case .gemini:
+            return "Gemini generateContent \(GeminiSecrets.model), screenshots=up to 5"
         }
     }
 

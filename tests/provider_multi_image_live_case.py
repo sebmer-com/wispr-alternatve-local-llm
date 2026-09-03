@@ -31,9 +31,14 @@ def resolve_api_key(name: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Optional live five-image provider smoke test")
-    parser.add_argument("--provider", choices=["openai", "cerebras"], required=True)
+    parser.add_argument("--provider", choices=["openai", "cerebras", "gemini"], required=True)
     args = parser.parse_args()
-    key_name = "OPENAI_API_KEY" if args.provider == "openai" else "CEREBRAS_API_KEY"
+    key_names = {
+        "openai": "OPENAI_API_KEY",
+        "cerebras": "CEREBRAS_API_KEY",
+        "gemini": "GEMINI_API_KEY",
+    }
+    key_name = key_names[args.provider]
     api_key = resolve_api_key(key_name)
     if not api_key:
         print(f"SKIP {args.provider} multi-image live test: {key_name} is unavailable")

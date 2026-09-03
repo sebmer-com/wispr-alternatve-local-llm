@@ -13,13 +13,14 @@
 - Releasing `Command` transcribes both segments and sends them to the selected command provider.
 - OpenAI uses the Responses API with `gpt-5.6-luna`, low reasoning, low text verbosity, `store: false`, and low-detail images.
 - Cerebras uses Chat Completions with `gemma-4-31b`.
+- Gemini uses `generateContent` with `gemini-3.5-flash` and the `x-goog-api-key` header instead of Bearer auth.
 - The checked-in default is OpenAI; an installed user config may override it. This Mac's installed config selects Cerebras.
 - A provider error produces no command output. There is no cross-provider or transcript fallback after a request error.
 - An empty instruction skips the request and delivers the information transcript.
 
 ## Safe Request Diagnostics
 
-- Both provider clients assign one logical request ID and emit structured request, image, attempt, retry, and terminal-failure records.
+- All three provider clients assign one logical request ID and emit structured request, image, attempt, retry, and terminal-failure records.
 - Request records include provider/model, prompt character counts, image count, payload bytes, build duration, and timeout.
 - Image records include ordered index, local path, byte count, MIME type, Base64 character count, and SHA-256.
 - Attempt records include attempt number/maximum, duration, outcome, HTTP status, response bytes, and provider request ID.
@@ -46,9 +47,9 @@
 
 ## Setup
 
-- Guided setup asks for language, paste shortcut, OpenAI or Cerebras, the selected provider's hidden key, and the `Control + Option` mode.
-- Writes `command_provider` to user config and preserves the other provider's key in the adjacent `.env` file.
-- Uses `OPENAI_API_KEY` for OpenAI and `CEREBRAS_API_KEY` for Cerebras.
+- Guided setup asks for language, paste shortcut, OpenAI, Cerebras, or Gemini, the selected provider's hidden key, and the `Control + Option` mode.
+- Writes `command_provider` to user config and preserves the other providers' keys in the adjacent `.env` file.
+- Uses `OPENAI_API_KEY` for OpenAI, `CEREBRAS_API_KEY` for Cerebras, and `GEMINI_API_KEY` for Gemini.
 - Keeps API keys out of JSON and enforces `.env` mode `0600`.
 
 ## Selectable Control + Option Mode

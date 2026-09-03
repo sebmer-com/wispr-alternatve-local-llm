@@ -31,14 +31,15 @@
 
 - `openai`: Responses API, `gpt-5.6-luna`, `reasoning.effort: low`, `text.verbosity: low`, `store: false`, and `detail: low` image inputs.
 - `cerebras`: Chat Completions, `gemma-4-31b`, with ordered image data URLs.
+- `gemini`: `generateContent`, `gemini-3.5-flash`, the `x-goog-api-key` header instead of Bearer auth, and ordered `inlineData` image inputs.
 
 The repository default is `openai`; this Mac's installed user config overrides it to `cerebras`. Keys come from the process environment or `.env` beside the active config.
 
-If a provider request fails, the app emits no command result. It does not call the other provider and does not deliver the information transcript as a provider-error fallback. If the instruction is empty before any request, it still delivers the information transcript.
+If a provider request fails, the app emits no command result. It does not call another provider and does not deliver the information transcript as a provider-error fallback. If the instruction is empty before any request, it still delivers the information transcript.
 
 ## Diagnostics and Failed-Turn Lifecycle
 
-For both providers, one logical `request_id` connects the request summary, image metadata, every attempt, retry decision, and terminal failure. Logs expose prompt lengths, image path/size/MIME/Base64 length/SHA-256, payload size/build time, configured timeout, attempt `n/max`, duration/outcome, HTTP status, response bytes, provider request ID, retry reason, and final `NSError` domain/code. They exclude API keys, `Authorization`, and raw Base64 content.
+For all three providers, one logical `request_id` connects the request summary, image metadata, every attempt, retry decision, and terminal failure. Logs expose prompt lengths, image path/size/MIME/Base64 length/SHA-256, payload size/build time, configured timeout, attempt `n/max`, duration/outcome, HTTP status, response bytes, provider request ID, retry reason, and final `NSError` domain/code. They exclude API keys, `Authorization`, and raw Base64 content.
 
 On provider, Hermes, Markdown, or delivery failure, the app writes the newest failed turn to `~/Library/Application Support/fluid-push-to-talk/last-failed-command/`. The `0700` directory contains a `0600` `turn.json` and `0600` copies of captured images. A later failure replaces it through a staged backup-and-promote flow; startup recovery restores a valid backup after an interrupted promotion.
 

@@ -7,11 +7,13 @@ enum AppInfo {
 enum CommandProvider: String, Codable {
     case openAI = "openai"
     case cerebras
+    case gemini
 
     var displayName: String {
         switch self {
         case .openAI: return "OpenAI"
         case .cerebras: return "Cerebras"
+        case .gemini: return "Gemini"
         }
     }
 
@@ -19,6 +21,7 @@ enum CommandProvider: String, Codable {
         switch self {
         case .openAI: return OpenAISecrets.model
         case .cerebras: return CerebrasSecrets.model
+        case .gemini: return GeminiSecrets.model
         }
     }
 
@@ -26,6 +29,7 @@ enum CommandProvider: String, Codable {
         switch self {
         case .openAI: return OpenAISecrets.apiKeyEnvironmentName
         case .cerebras: return CerebrasSecrets.apiKeyEnvironmentName
+        case .gemini: return GeminiSecrets.apiKeyEnvironmentName
         }
     }
 
@@ -422,6 +426,15 @@ enum OpenAISecrets {
 enum CerebrasSecrets {
     static let model = "gemma-4-31b"
     static let apiKeyEnvironmentName = "CEREBRAS_API_KEY"
+
+    static func resolveAPIKey(configURL: URL) -> String {
+        ProviderSecrets.resolveAPIKey(named: apiKeyEnvironmentName, configURL: configURL)
+    }
+}
+
+enum GeminiSecrets {
+    static let model = "gemini-3.5-flash"
+    static let apiKeyEnvironmentName = "GEMINI_API_KEY"
 
     static func resolveAPIKey(configURL: URL) -> String {
         ProviderSecrets.resolveAPIKey(named: apiKeyEnvironmentName, configURL: configURL)

@@ -2029,6 +2029,8 @@ struct FluidPushToTalk {
             return OpenAIResponsesClient(apiKey: apiKey)
         case .cerebras:
             return CerebrasChatCompletionsClient(apiKey: apiKey)
+        case .gemini:
+            return GeminiClient(apiKey: apiKey)
         }
     }
 

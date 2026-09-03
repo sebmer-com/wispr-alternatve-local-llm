@@ -30,6 +30,7 @@ def main() -> int:
     failed |= fail("command prompt must not mention removed skill tools") if "skill" in json.dumps(core_prompt).lower() else False
     failed |= fail(".env.example must document OPENAI_API_KEY") if "OPENAI_API_KEY=" not in env_example else False
     failed |= fail(".env.example must document CEREBRAS_API_KEY") if "CEREBRAS_API_KEY=" not in env_example else False
+    failed |= fail(".env.example must document GEMINI_API_KEY") if "GEMINI_API_KEY=" not in env_example else False
     failed |= fail(".env.example must not retain Azure credentials") if "AZURE" in env_example.upper() else False
 
     required = [

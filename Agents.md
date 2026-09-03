@@ -2,7 +2,7 @@
 
 ## Product and priorities
 
-`fluid-push-to-talk` is a native macOS 14+ voice-dictation app for Apple Silicon. Audio is recorded and transcribed locally with FluidAudio/CoreML. Normal dictation is local; two-stage commands use the configured OpenAI or Cerebras client.
+`fluid-push-to-talk` is a native macOS 14+ voice-dictation app for Apple Silicon. Audio is recorded and transcribed locally with FluidAudio/CoreML. Normal dictation is local; two-stage commands use the configured OpenAI, Cerebras, or Gemini client.
 
 Prioritize:
 
@@ -21,6 +21,7 @@ Do not add dependencies unless explicitly required. Prefer small, reversible cha
 - `app/Sources/OpenAI/CommandLLMClient.swift`: shared command-provider interface.
 - `app/Sources/OpenAI/OpenAIResponsesClient.swift`: Luna Responses request and low-detail multi-image encoding.
 - `app/Sources/Cerebras/CerebrasChatCompletionsClient.swift`: Gemma 4 Chat Completions request and multi-image encoding.
+- `app/Sources/Gemini/GeminiClient.swift`: Gemini `generateContent` request and multi-image `inlineData` encoding.
 - `app/Sources/CommandResultGenerator.swift`: shared command prompt generation and provider-error propagation.
 - `app/Sources/Command/CommandRequestDiagnostics.swift`: secret-safe structured request, image, attempt, retry, and terminal logs.
 - `app/Sources/Command/FailedCommandTurnStore.swift`: protected last-failed-command manifest and image retention.
@@ -32,10 +33,11 @@ Do not add dependencies unless explicitly required. Prefer small, reversible cha
 
 ## Provider contract
 
-- `command_provider` accepts `openai` or `cerebras`.
+- `command_provider` accepts `openai`, `cerebras`, or `gemini`.
 - Checked-in `config/config.json` defaults to OpenAI. The installed config may override it; this Mac's user config selects Cerebras.
 - OpenAI is fixed to Responses, `gpt-5.6-luna`, low reasoning, low text verbosity, `store: false`, and low-detail images.
 - Cerebras is fixed to Chat Completions and `gemma-4-31b`.
+- Gemini is fixed to `generateContent`, `gemini-3.5-flash`, and the `x-goog-api-key` header instead of Bearer auth.
 - Resolve only the selected provider's key from the process environment or `.env` beside the active config.
 - Never call the other provider after an error. A provider error must propagate to runtime and produce no command delivery or transcript fallback output.
 - Preserve the information transcript only for pre-request cases such as an empty instruction.
@@ -63,7 +65,7 @@ Do not add dependencies unless explicitly required. Prefer small, reversible cha
 - Ignore auto-repeat, swallow handled key-down/key-up events, and rearm only on physical key-up.
 - Preserve capture order and accept at most five screenshots. Ignore additional capture requests.
 - Zero images is valid. Never capture automatically when transitioning to the instruction segment.
-- In Dump commands, archive images in Markdown but never send them to OpenAI/Cerebras. In Hermes mode, attach images in order using native `/image` commands before the prompt.
+- In Dump commands, archive images in Markdown but never send them to OpenAI/Cerebras/Gemini. In Hermes mode, attach images in order using native `/image` commands before the prompt.
 - Treat every full-desktop image as sensitive. Do not log image bytes or contents.
 - Delete normal temporary images after success, errors, local-dictation exit, cancellation, and startup stale-file cleanup. On a failed provider/delivery turn, first copy its images into the protected last-failed-command bundle.
 
