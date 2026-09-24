@@ -105,8 +105,8 @@ struct Options {
     }
 
     private static func validate(_ options: Options) throws {
-        if !["v2", "v3"].contains(options.config.asr.modelVersion) {
-            throw CliError.invalidValue("--model-version must be v2 or v3")
+        if !["ultra", "v3", "v2"].contains(options.config.asr.modelVersion) {
+            throw CliError.invalidValue("--model-version must be ultra, v3, or v2")
         }
         if !AsrLanguageResolver.isValidPreference(options.config.asr.language) {
             throw CliError.invalidValue(
@@ -232,7 +232,7 @@ struct Options {
 
             Options:
               --config PATH                Config file. Default: ~/.config/fluid-push-to-talk/config.json.
-              --model-version v3|v2        ASR model version. v3 is multilingual, v2 is English-only.
+              --model-version ultra|v3|v2  ASR model version. Default: ultra. ultra and v3 are multilingual, v2 is English-only.
               --language CODE|system|auto  Language hint. Default: system.
               --output-dir PATH            Directory for --save-recordings output.
               --save-recordings            Keep recordings instead of deleting temp files.

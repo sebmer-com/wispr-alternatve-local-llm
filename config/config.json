@@ -7,7 +7,7 @@
     "enabled": false
   },
   "asr": {
-    "model_version": "v3",
+    "model_version": "ultra",
     "language": "system"
   },
   "audio_input": {

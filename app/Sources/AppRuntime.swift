@@ -314,7 +314,15 @@ actor FluidTranscriber {
     func prepare(modelVersion: String, language: String) async throws -> AsrLanguageResolution {
         let resolution = AsrLanguageResolver.resolve(language)
         self.language = resolution.language
-        let version: AsrModelVersion = modelVersion == "v2" ? .v2 : .v3
+        let version: AsrModelVersion
+        switch modelVersion {
+        case "v2":
+            version = .v2
+        case "v3":
+            version = .v3
+        default:
+            version = .ultra
+        }
         let models = try await AsrModels.downloadAndLoad(version: version)
         try await manager.loadModels(models)
         decoderState = TdtDecoderState.make()

@@ -4,7 +4,7 @@
 
 - Records while the configured hotkey is held and transcribes with FluidAudio/CoreML.
 - Applies replacements from `config/textReplacements.json` before delivery or command generation.
-- Supports multilingual v3 and English v2 ASR plus explicit or automatic language selection.
+- Supports multilingual Parakeet Ultra (default) and v3 plus English v2 ASR, with explicit or automatic language selection.
 - `Command + Option` released together stays local and delivers through `llm_output.paste`.
 
 ## Two-Stage Command Mode

@@ -16,7 +16,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/FluidInference/FluidAudio.git",
-            branch: "main"
+            .upToNextMinor(from: "0.17.3")
         ),
     ],
     targets: [

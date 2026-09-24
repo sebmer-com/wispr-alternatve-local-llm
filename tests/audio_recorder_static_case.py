@@ -5,6 +5,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 APP_RUNTIME = REPO_ROOT / "app" / "Sources" / "AppRuntime.swift"
+APP_CONFIG = REPO_ROOT / "app" / "Sources" / "Config" / "AppConfig.swift"
+OPTIONS = REPO_ROOT / "app" / "Sources" / "CLI" / "Options.swift"
+CHECKED_IN_CONFIG = REPO_ROOT / "config" / "config.json"
 
 
 def main() -> int:
@@ -77,6 +80,10 @@ def main() -> int:
         (
             "try await manager.transcribe(\n                url,",
             "transcriber must pass the whole recording to FluidAudio's chunked long-audio path",
+        ),
+        (
+            "version = .ultra",
+            "transcriber must load Parakeet Ultra for the default ASR model version",
         ),
         (
             "captureMetadata(url: url)",
@@ -179,6 +186,16 @@ def main() -> int:
     for needle in forbidden:
         if needle in source:
             print(f"audio recorder regression: forbidden pattern remains (old engine/HAL or recording time limit): {needle}", file=sys.stderr)
+            failed = True
+
+    asr_default_checks = [
+        (APP_CONFIG, 'var modelVersion = "ultra"', "AsrConfig must default to Parakeet Ultra"),
+        (CHECKED_IN_CONFIG, '"model_version": "ultra"', "checked-in config must default to Parakeet Ultra"),
+        (OPTIONS, '["ultra", "v3", "v2"].contains(options.config.asr.modelVersion)', "CLI must accept ultra, v3, and v2"),
+    ]
+    for path, needle, message in asr_default_checks:
+        if needle not in path.read_text(encoding="utf-8"):
+            print(f"audio recorder regression: {message}", file=sys.stderr)
             failed = True
 
     if failed:

@@ -197,7 +197,7 @@ struct DebugConfig: Codable {
 }
 
 struct AsrConfig: Codable {
-    var modelVersion = "v3"
+    var modelVersion = "ultra"
     var language = "system"
 
     enum CodingKeys: String, CodingKey {
