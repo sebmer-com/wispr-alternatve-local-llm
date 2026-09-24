@@ -54,8 +54,8 @@ def main() -> int:
             "app must install a terminal command reader",
         ),
         (
-            "recorder.start(usesWatchdog: false)" in runtime_source,
-            "terminal continuous dump must record until stop without the push-to-talk watchdog",
+            "try recorder.start()" in runtime_source and "usesWatchdog" not in runtime_source,
+            "terminal continuous dump must record until stop without a recording time limit",
         ),
         (
             "continuous dump stopped; transcribing..." in runtime_source,

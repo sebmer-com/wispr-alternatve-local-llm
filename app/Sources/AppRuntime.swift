@@ -94,13 +94,11 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate, @unchecked Sendabl
     private let audioInput: AudioInputConfig
     private let lock = NSLock()
     private let minimumTranscribableFrames: AVAudioFramePosition = 3_200
-    private let maxRecordingDuration: TimeInterval = 300
     private let minimumRestartDelay: TimeInterval = 0.35
     private var recorder: AVAudioRecorder?
     private var currentURL: URL?
     private var recordingStartedAt: Date?
     private var recording = false
-    private var recordingToken = UUID()
     private var lastStopUptime: TimeInterval = 0
     private var peakPower: Float = -160
 
@@ -112,7 +110,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate, @unchecked Sendabl
         lock.withLock { recording }
     }
 
-    func start(usesWatchdog: Bool = true) throws {
+    func start() throws {
         try ensureMicrophonePermission()
         waitForRestartCooldown()
 
@@ -120,19 +118,17 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate, @unchecked Sendabl
             .appendingPathComponent("fluid_ptt_\(UUID().uuidString)")
             .appendingPathExtension("m4a")
 
-        let token = lock.withLock {
+        let started = lock.withLock {
             guard !recording else {
-                return nil as UUID?
+                return false
             }
             recording = true
             currentURL = url
             recordingStartedAt = Date()
             peakPower = -160
-            let token = UUID()
-            recordingToken = token
-            return token
+            return true
         }
-        guard let token else {
+        guard started else {
             return
         }
 
@@ -148,9 +144,6 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate, @unchecked Sendabl
         } catch {
             failStart(recorder: nil, url: url)
             throw error
-        }
-        if usesWatchdog {
-            scheduleWatchdog(for: token)
         }
     }
 
@@ -226,10 +219,6 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate, @unchecked Sendabl
     }
 
     func stop() -> URL? {
-        stopInternal(reason: nil)
-    }
-
-    private func stopInternal(reason: String?) -> URL? {
         lock.lock()
         guard recording else {
             lock.unlock()
@@ -255,9 +244,6 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate, @unchecked Sendabl
             return nil
         }
 
-        if let reason {
-            log("recording stopped: \(reason)")
-        }
         guard let capture = captureMetadata(url: url) else {
             log("recording skipped: no audio file captured")
             try? FileManager.default.removeItem(at: url)
@@ -276,21 +262,6 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate, @unchecked Sendabl
             return nil
         }
         return capture.url
-    }
-
-    private func scheduleWatchdog(for token: UUID) {
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + maxRecordingDuration) { [weak self] in
-            guard let self else {
-                return
-            }
-            let shouldStop = self.lock.withLock {
-                self.recording && self.recordingToken == token
-            }
-            guard shouldStop else {
-                return
-            }
-            _ = self.stopInternal(reason: "exceeded \(Int(self.maxRecordingDuration)) seconds")
-        }
     }
 
     private func captureMetadata(url: URL) -> RecordingCapture? {
@@ -658,7 +629,7 @@ final class PushToTalkController: @unchecked Sendable {
         }
 
         do {
-            try recorder.start(usesWatchdog: false)
+            try recorder.start()
             beginAudioDuckingIfNeeded()
             continuousDumpActive = true
             log("continuous dump started. Type stop to transcribe and write to Obsidian.")

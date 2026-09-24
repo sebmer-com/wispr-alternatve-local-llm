@@ -75,12 +75,8 @@ def main() -> int:
             "audio recorder must check the AVAudioRecorder start result",
         ),
         (
-            "scheduleWatchdog(for: token)",
-            "audio recorder must start the watchdog for each recording",
-        ),
-        (
-            "maxRecordingDuration",
-            "audio recorder must define a maximum recording duration",
+            "try await manager.transcribe(\n                url,",
+            "transcriber must pass the whole recording to FluidAudio's chunked long-audio path",
         ),
         (
             "captureMetadata(url: url)",
@@ -147,6 +143,10 @@ def main() -> int:
             failed = True
 
     forbidden = [
+        "maxRecordingDuration",
+        "scheduleWatchdog",
+        "usesWatchdog",
+        "recording stopped: exceeded",
         "AVAudioEngine",
         "AudioUnitSetProperty(",
         "kAudioOutputUnitProperty_CurrentDevice",
@@ -178,7 +178,7 @@ def main() -> int:
     ]
     for needle in forbidden:
         if needle in source:
-            print(f"audio recorder regression: forbidden old engine/HAL pattern remains: {needle}", file=sys.stderr)
+            print(f"audio recorder regression: forbidden pattern remains (old engine/HAL or recording time limit): {needle}", file=sys.stderr)
             failed = True
 
     if failed:
