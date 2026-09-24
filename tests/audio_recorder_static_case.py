@@ -8,6 +8,7 @@ APP_RUNTIME = REPO_ROOT / "app" / "Sources" / "AppRuntime.swift"
 APP_CONFIG = REPO_ROOT / "app" / "Sources" / "Config" / "AppConfig.swift"
 OPTIONS = REPO_ROOT / "app" / "Sources" / "CLI" / "Options.swift"
 CHECKED_IN_CONFIG = REPO_ROOT / "config" / "config.json"
+QWEN3_WORKER = REPO_ROOT / "app" / "Sources" / "ASR" / "Qwen3ASRWorker.swift"
 
 
 def main() -> int:
@@ -191,7 +192,13 @@ def main() -> int:
     asr_default_checks = [
         (APP_CONFIG, 'var modelVersion = "ultra"', "AsrConfig must default to Parakeet Ultra"),
         (CHECKED_IN_CONFIG, '"model_version": "ultra"', "checked-in config must default to Parakeet Ultra"),
-        (OPTIONS, '["ultra", "v3", "v2"].contains(options.config.asr.modelVersion)', "CLI must accept ultra, v3, and v2"),
+        (OPTIONS, '["ultra", "v3", "v2", Qwen3ASRWorker.modelVersion].contains(options.config.asr.modelVersion)', "CLI must accept ultra, v3, v2, and qwen3-asr-1.7b"),
+        (QWEN3_WORKER, 'static let modelVersion = "qwen3-asr-1.7b"', "Qwen3 worker must own the qwen3-asr-1.7b config value"),
+        (QWEN3_WORKER, 'static let modelID = "Qwen/Qwen3-ASR-1.7B"', "Qwen3 worker must load Qwen3-ASR-1.7B"),
+        (QWEN3_WORKER, 'static let packageRequirement = "mlx-qwen3-asr==0.4.4"', "Qwen3 worker must pin the MLX package"),
+        (QWEN3_WORKER, "attributes: [.posixPermissions: 0o600]", "Qwen3 temporary audio must be private"),
+        (QWEN3_WORKER, "try? FileManager.default.removeItem(at: url)", "Qwen3 temporary audio must be deleted after every request"),
+        (APP_RUNTIME, "try await qwen3Worker.transcribe(samples: samples)", "transcriber must route qwen3-asr-1.7b recordings to the Qwen3 worker"),
     ]
     for path, needle, message in asr_default_checks:
         if needle not in path.read_text(encoding="utf-8"):

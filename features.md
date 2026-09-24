@@ -5,6 +5,7 @@
 - Records while the configured hotkey is held and transcribes with FluidAudio/CoreML.
 - Applies replacements from `config/textReplacements.json` before delivery or command generation.
 - Supports multilingual Parakeet Ultra (default) and v3 plus English v2 ASR, with explicit or automatic language selection.
+- Optional `"model_version": "qwen3-asr-1.7b"` runs Qwen3-ASR-1.7B locally through MLX in a `uv`-managed worker. It detects the spoken language automatically; the model downloads once into the Hugging Face cache.
 - `Command + Option` released together stays local and delivers through `llm_output.paste`.
 
 ## Two-Stage Command Mode

@@ -183,6 +183,7 @@ python3 tests/run_all.py --skip-llm --live-multi-image
 
 ```bash
 app/.build/debug/fluid-push-to-talk --model-version v2 --language en
+app/.build/debug/fluid-push-to-talk --model-version qwen3-asr-1.7b
 app/.build/debug/fluid-push-to-talk --config config/config.json
 app/.build/debug/fluid-push-to-talk --save-recordings
 app/.build/debug/fluid-push-to-talk --language auto

@@ -309,11 +309,18 @@ actor FluidTranscriber {
     private let manager = AsrManager(config: .default)
     private var decoderState = TdtDecoderState.make()
     private var language: Language?
+    private var qwen3Worker: Qwen3ASRWorker?
     private let minimumTranscribableFrames: AVAudioFramePosition = 3_200
 
     func prepare(modelVersion: String, language: String) async throws -> AsrLanguageResolution {
         let resolution = AsrLanguageResolver.resolve(language)
         self.language = resolution.language
+        if modelVersion == Qwen3ASRWorker.modelVersion {
+            let worker = Qwen3ASRWorker()
+            try await worker.start()
+            qwen3Worker = worker
+            return resolution
+        }
         let version: AsrModelVersion
         switch modelVersion {
         case "v2":
@@ -333,6 +340,14 @@ actor FluidTranscriber {
         let metadata = try audioFileMetadata(url: url)
         guard metadata.frameCount >= minimumTranscribableFrames else {
             throw CliError.invalidValue("audio file too short for transcription: \(metadata.summary), path \(url.path)")
+        }
+        if let qwen3Worker {
+            do {
+                let samples = try AudioConverter().resampleAudioFile(url)
+                return try await qwen3Worker.transcribe(samples: samples)
+            } catch {
+                throw CliError.invalidValue("Qwen3-ASR rejected audio: \(metadata.summary), path \(url.path), error \(error)")
+            }
         }
         var state = decoderState
         do {

@@ -105,7 +105,8 @@ def validate_help() -> bool:
     expected = [
         "FluidAudio Push To Talk 0.2.3",
         "--config PATH",
-        "--model-version ultra|v3|v2",
+        "--model-version MODEL",
+        "qwen3-asr-1.7b",
         "--test-command-information",
         "--test-command",
         "--test-command-image",
