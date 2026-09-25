@@ -30,7 +30,7 @@
 `command_provider` selects exactly one client:
 
 - `openai`: Responses API, `gpt-5.6-luna`, `reasoning.effort: low`, `text.verbosity: low`, `store: false`, and `detail: low` image inputs.
-- `cerebras`: Chat Completions, `gemma-4-31b`, with ordered image data URLs.
+- `cerebras`: Chat Completions, `qwen-3.8-27b`, low reasoning, 4096 completion tokens including reasoning, with ordered image data URLs. Missing answer text and token-limit truncation fail without delivery.
 
 The repository default is `openai`; this Mac's installed user config overrides it to `cerebras`. Keys come from the process environment or `.env` beside the active config.
 

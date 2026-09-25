@@ -40,7 +40,7 @@ Stand: 2026-08-24
 `command_provider` ist entweder:
 
 - `openai`: `https://api.openai.com/v1/responses`, `gpt-5.6-luna`, Reasoning `low`, Text-Verbosity `low`, `store: false`, Bilder mit `detail: low`.
-- `cerebras`: `https://api.cerebras.ai/v1/chat/completions`, `gemma-4-31b`, geordnete Bild-Data-URLs.
+- `cerebras`: `https://api.cerebras.ai/v1/chat/completions`, `qwen-3.8-27b`, geordnete Bild-Data-URLs.
 
 Der Repository-Default ist `openai`. Die installierte User-Config auf diesem Mac ueberschreibt ihn mit `cerebras`. Setup schreibt nur die Auswahl in die User-Config und aktualisiert nur den dazugehoerigen Key in der benachbarten `.env`:
 

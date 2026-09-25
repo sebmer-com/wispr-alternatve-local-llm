@@ -59,7 +59,7 @@ def main() -> int:
         ('case commandProvider = "command_provider"', config_source, "command_provider config key is missing"),
         ('case controlOptionMode = "control_option_mode"', config_source, "control_option_mode config key is missing"),
         ("gpt-5.6-luna", options, "CLI help must explain the OpenAI model"),
-        ("gemma-4-31b", options, "CLI help must explain the Cerebras model"),
+        ("qwen-3.8-27b", options, "CLI help must explain the Cerebras model"),
     ]:
         failed |= require(needle in source, message)
 

@@ -20,7 +20,7 @@ Do not add dependencies unless explicitly required. Prefer small, reversible cha
 - `app/Sources/Config/`: config schema, provider selection, hotkeys, prompts, language, and replacements.
 - `app/Sources/OpenAI/CommandLLMClient.swift`: shared command-provider interface.
 - `app/Sources/OpenAI/OpenAIResponsesClient.swift`: Luna Responses request and low-detail multi-image encoding.
-- `app/Sources/Cerebras/CerebrasChatCompletionsClient.swift`: Gemma 4 Chat Completions request and multi-image encoding.
+- `app/Sources/Cerebras/CerebrasChatCompletionsClient.swift`: Qwen 3.8 27B Chat Completions request and multi-image encoding.
 - `app/Sources/CommandResultGenerator.swift`: shared command prompt generation and provider-error propagation.
 - `app/Sources/Command/CommandRequestDiagnostics.swift`: secret-safe structured request, image, attempt, retry, and terminal logs.
 - `app/Sources/Command/FailedCommandTurnStore.swift`: protected last-failed-command manifest and image retention.
@@ -35,7 +35,7 @@ Do not add dependencies unless explicitly required. Prefer small, reversible cha
 - `command_provider` accepts `openai` or `cerebras`.
 - Checked-in `config/config.json` defaults to OpenAI. The installed config may override it; this Mac's user config selects Cerebras.
 - OpenAI is fixed to Responses, `gpt-5.6-luna`, low reasoning, low text verbosity, `store: false`, and low-detail images.
-- Cerebras is fixed to Chat Completions and `gemma-4-31b`.
+- Cerebras is fixed to Chat Completions, `qwen-3.8-27b`, low reasoning, and 4096 completion tokens including reasoning. Missing answer text and token-limit truncation must fail without delivering reasoning or partial answers.
 - Resolve only the selected provider's key from the process environment or `.env` beside the active config.
 - Never call the other provider after an error. A provider error must propagate to runtime and produce no command delivery or transcript fallback output.
 - Preserve the information transcript only for pre-request cases such as an empty instruction.

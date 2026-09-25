@@ -1,6 +1,8 @@
 # Multi-Image Provider Benchmarks
 
-Stand: 2026-08-24
+Stand der Messungen: 2026-08-24
+
+Historische Gemma-4-Messungen; seit 2026-09-14 verwendet der Cerebras-Client `qwen-3.8-27b`. Die folgenden Latenzen gelten nicht fuer Qwen.
 
 ## Gemessene Ergebnisse
 
@@ -11,7 +13,7 @@ Stand: 2026-08-24
 
 Diese Werte sind beobachtete End-to-End-Latenzen der Multi-Image-Checks, keine garantierten Servicezeiten. Sie belegen, dass beide Clients mehrere geordnete Bilder verarbeiten; sie entscheiden nicht automatisch, welcher Provider fuer einen User ausgewaehlt wird.
 
-## Feste Request-Profile
+## Request-Profile der historischen Messungen
 
 - OpenAI: Responses API, `gpt-5.6-luna`, Reasoning `low`, Text-Verbosity `low`, `detail: low`, `store: false`.
 - Cerebras: Chat Completions, `gemma-4-31b`.

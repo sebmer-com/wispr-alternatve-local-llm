@@ -15,7 +15,7 @@ final class FailedCommandTurnStoreTests: XCTestCase {
 
         try store.retain(
             provider: "Cerebras",
-            model: "gemma-4-31b",
+            model: "qwen-3.8-27b",
             information: "voice information",
             command: "voice command",
             errorDescription: "timeout",
@@ -56,7 +56,7 @@ final class FailedCommandTurnStoreTests: XCTestCase {
         )
         try store.retain(
             provider: "Cerebras",
-            model: "gemma-4-31b",
+            model: "qwen-3.8-27b",
             information: "second",
             command: "second command",
             errorDescription: "second error",
@@ -91,7 +91,7 @@ final class FailedCommandTurnStoreTests: XCTestCase {
 
         XCTAssertThrowsError(try failingStore.retain(
             provider: "Cerebras",
-            model: "gemma-4-31b",
+            model: "qwen-3.8-27b",
             information: "replacement information",
             command: "replacement command",
             errorDescription: "replacement error",
@@ -124,7 +124,7 @@ final class FailedCommandTurnStoreTests: XCTestCase {
 
         XCTAssertThrowsError(try store.retain(
             provider: "Cerebras",
-            model: "gemma-4-31b",
+            model: "qwen-3.8-27b",
             information: "replacement information",
             command: "replacement command",
             errorDescription: "replacement error",
@@ -149,7 +149,7 @@ final class FailedCommandTurnStoreTests: XCTestCase {
         let store = FailedCommandTurnStore(rootURL: storeURL)
         try store.retain(
             provider: "Cerebras",
-            model: "gemma-4-31b",
+            model: "qwen-3.8-27b",
             information: "recoverable information",
             command: "recoverable command",
             errorDescription: "recoverable error",

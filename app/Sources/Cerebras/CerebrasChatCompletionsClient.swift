@@ -2,9 +2,11 @@ import Foundation
 
 final class CerebrasChatCompletionsClient: CommandLLMClient, @unchecked Sendable {
     static let endpoint = URL(string: "https://api.cerebras.ai/v1/chat/completions")!
-    static let model = "gemma-4-31b"
+    static let model = "qwen-3.8-27b"
     static let temperature = 0.2
-    static let maxTokens = 256
+    // Qwen counts reasoning and visible output against the same completion budget.
+    static let maxCompletionTokens = 4_096
+    static let reasoningEffort = "low"
     static let maximumImages = 5
     static let userAgent = "fluid-push-to-talk/0.2.3"
 
@@ -141,7 +143,8 @@ final class CerebrasChatCompletionsClient: CommandLLMClient, @unchecked Sendable
                 .init(role: "user", content: .parts(userContent)),
             ],
             temperature: Self.temperature,
-            maxTokens: Self.maxTokens
+            maxCompletionTokens: Self.maxCompletionTokens,
+            reasoningEffort: Self.reasoningEffort
         )
 
         var request = URLRequest(url: requestURL)
@@ -168,7 +171,14 @@ final class CerebrasChatCompletionsClient: CommandLLMClient, @unchecked Sendable
         } catch {
             throw CerebrasChatCompletionsError.invalidResponse
         }
-        let content = payload.choices.first?.message.content
+        guard let choice = payload.choices.first else {
+            throw CerebrasChatCompletionsError.emptyResponse
+        }
+        // Never deliver a partial answer or substitute the model's private reasoning.
+        guard choice.finishReason != "length" else {
+            throw CerebrasChatCompletionsError.completionLimitExceeded
+        }
+        let content = choice.message.content?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !content.isEmpty else {
             throw CerebrasChatCompletionsError.emptyResponse
@@ -209,6 +219,7 @@ enum CerebrasChatCompletionsError: Error, LocalizedError, Equatable {
     case http(statusCode: Int, message: String)
     case invalidResponse
     case emptyResponse
+    case completionLimitExceeded
 
     var errorDescription: String? {
         switch self {
@@ -218,7 +229,9 @@ enum CerebrasChatCompletionsError: Error, LocalizedError, Equatable {
         case let .http(statusCode, message):
             return "Cerebras Chat Completions request failed with HTTP \(statusCode): \(message)"
         case .invalidResponse: return "Cerebras returned an invalid Chat Completions payload"
-        case .emptyResponse: return "Cerebras returned an empty response"
+        case .emptyResponse: return "Cerebras returned no answer text"
+        case .completionLimitExceeded:
+            return "Cerebras exhausted the completion token budget before finishing the answer"
         }
     }
 }
@@ -227,11 +240,13 @@ private struct ChatCompletionsRequest: Encodable {
     let model: String
     let messages: [Message]
     let temperature: Double
-    let maxTokens: Int
+    let maxCompletionTokens: Int
+    let reasoningEffort: String
 
     enum CodingKeys: String, CodingKey {
         case model, messages, temperature
-        case maxTokens = "max_tokens"
+        case maxCompletionTokens = "max_completion_tokens"
+        case reasoningEffort = "reasoning_effort"
     }
 
     struct Message: Encodable {
@@ -285,8 +300,16 @@ private struct ChatCompletionsRequest: Encodable {
 
 private struct ChatCompletionsResponse: Decodable {
     let choices: [Choice]
-    struct Choice: Decodable { let message: Message }
-    struct Message: Decodable { let content: String }
+    struct Choice: Decodable {
+        let message: Message
+        let finishReason: String?
+
+        enum CodingKeys: String, CodingKey {
+            case message
+            case finishReason = "finish_reason"
+        }
+    }
+    struct Message: Decodable { let content: String? }
 }
 
 private struct CerebrasErrorResponse: Decodable {

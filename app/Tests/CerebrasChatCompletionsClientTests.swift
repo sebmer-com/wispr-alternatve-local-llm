@@ -27,9 +27,11 @@ final class CerebrasChatCompletionsClientTests: XCTestCase {
         XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-cerebras-key")
         XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent"), "fluid-push-to-talk/0.2.3")
         let json = try requestJSON(request)
-        XCTAssertEqual(json["model"] as? String, "gemma-4-31b")
+        XCTAssertEqual(json["model"] as? String, "qwen-3.8-27b")
         XCTAssertEqual(json["temperature"] as? Double, 0.2)
-        XCTAssertEqual(json["max_tokens"] as? Int, 256)
+        XCTAssertEqual(json["max_completion_tokens"] as? Int, 4_096)
+        XCTAssertNil(json["max_tokens"])
+        XCTAssertEqual(json["reasoning_effort"] as? String, "low")
         let messages = try XCTUnwrap(json["messages"] as? [[String: Any]])
         XCTAssertEqual(messages.count, 2)
         XCTAssertEqual(messages[0]["role"] as? String, "system")
@@ -84,6 +86,59 @@ final class CerebrasChatCompletionsClientTests: XCTestCase {
         )
 
         XCTAssertEqual(result, "Cerebras answer")
+    }
+
+    func testReasoningOnlyAtTokenLimitReportsCompletionLimit() async {
+        await assertResponseFailure(
+            #"{"choices":[{"finish_reason":"length","message":{"role":"assistant","reasoning":"private reasoning"}}]}"#,
+            expected: .completionLimitExceeded
+        )
+    }
+
+    func testPartialAnswerAtTokenLimitIsNotDelivered() async {
+        await assertResponseFailure(
+            #"{"choices":[{"finish_reason":"length","message":{"content":"unfinished answer"}}]}"#,
+            expected: .completionLimitExceeded
+        )
+    }
+
+    func testMissingOrNullContentWithoutTokenLimitIsEmptyResponse() async {
+        for message in [#"{"reasoning":"private reasoning"}"#, #"{"content":null}"#] {
+            URLProtocolStub.reset()
+            await assertResponseFailure(
+                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":\(message)}]}",
+                expected: .emptyResponse
+            )
+        }
+    }
+
+    func testMalformedContentRemainsInvalidResponse() async {
+        await assertResponseFailure(
+            #"{"choices":[{"message":{"content":42}}]}"#,
+            expected: .invalidResponse
+        )
+    }
+
+    func testCompleteReturnsOnlyAnswerWhenReasoningIsPresent() async throws {
+        URLProtocolStub.enqueue(status: 200, body: Data(
+            #"{"choices":[{"finish_reason":"stop","message":{"content":" Done ","reasoning":"private reasoning"}}]}"#.utf8
+        ))
+        let result = try await makeClient().complete(systemPrompt: "S", userPrompt: "U", imageURLs: [])
+        XCTAssertEqual(result, "Done")
+    }
+
+    private func assertResponseFailure(
+        _ body: String,
+        expected: CerebrasChatCompletionsError
+    ) async {
+        URLProtocolStub.enqueue(status: 200, body: Data(body.utf8))
+        do {
+            _ = try await makeClient().complete(systemPrompt: "S", userPrompt: "U", imageURLs: [])
+            XCTFail("Expected response failure")
+        } catch {
+            XCTAssertEqual(error as? CerebrasChatCompletionsError, expected)
+        }
+        XCTAssertEqual(URLProtocolStub.requests.count, 1)
     }
 
     func testCompletePropagatesPaymentRequiredWithoutRetry() async {
@@ -183,7 +238,7 @@ final class CerebrasChatCompletionsClientTests: XCTestCase {
         let logs = capture.joined
         XCTAssertTrue(logs.contains("request_id="))
         XCTAssertTrue(logs.contains("provider=cerebras"))
-        XCTAssertTrue(logs.contains("model=gemma-4-31b"))
+        XCTAssertTrue(logs.contains("model=qwen-3.8-27b"))
         XCTAssertTrue(logs.contains("prompt_chars=10"))
         XCTAssertTrue(logs.contains("image_count=1"))
         XCTAssertTrue(logs.contains("timeout_seconds=1.000"))

@@ -379,7 +379,7 @@ enum ConfigWizard {
             prompt: "Choose command provider",
             options: [
                 "OpenAI — gpt-5.6-luna, low reasoning, low-detail screenshots",
-                "Cerebras — gemma-4-31b",
+                "Cerebras — qwen-3.8-27b",
             ],
             defaultIndex: defaultIndex
         )

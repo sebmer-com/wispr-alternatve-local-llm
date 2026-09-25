@@ -420,7 +420,7 @@ enum OpenAISecrets {
 }
 
 enum CerebrasSecrets {
-    static let model = "gemma-4-31b"
+    static let model = "qwen-3.8-27b"
     static let apiKeyEnvironmentName = "CEREBRAS_API_KEY"
 
     static func resolveAPIKey(configURL: URL) -> String {

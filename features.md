@@ -13,7 +13,7 @@
 - Releasing `Option` while holding `Command` finishes the information segment and starts the spoken instruction segment.
 - Releasing `Command` transcribes both segments and sends them to the selected command provider.
 - OpenAI uses the Responses API with `gpt-5.6-luna`, low reasoning, low text verbosity, `store: false`, and low-detail images.
-- Cerebras uses Chat Completions with `gemma-4-31b`.
+- Cerebras uses Chat Completions with `qwen-3.8-27b`.
 - The checked-in default is OpenAI; an installed user config may override it. This Mac's installed config selects Cerebras.
 - A provider error produces no command output. There is no cross-provider or transcript fallback after a request error.
 - An empty instruction skips the request and delivers the information transcript.

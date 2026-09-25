@@ -8,7 +8,7 @@ FluidAudio Push To Talk is a native macOS 14+ voice-dictation app for Apple Sili
 - Two-stage command flow: dictate information, release `Option`, dictate an instruction, then release `Command`.
 - Up to five optional screenshots, captured explicitly with physical `P` during the first `Command + Option` or `Control + Option` segment.
 - OpenAI Responses with `gpt-5.6-luna`, low reasoning, and low-detail images.
-- Cerebras Chat Completions with `gemma-4-31b`.
+- Cerebras Chat Completions with `qwen-3.8-27b`.
 - `Control + Option` selectable as Markdown Dump or one-segment Hermes Agent mode, plus optional ESP32 Bluetooth output.
 
 See [appBehavior.md](appBehavior.md) for exact shortcut behavior.
@@ -90,7 +90,9 @@ With zero `P` presses, the command request contains no images. Releasing both mo
 ### Cerebras
 
 - Endpoint: `https://api.cerebras.ai/v1/chat/completions`
-- Model: `gemma-4-31b`
+- Model: `qwen-3.8-27b`
+- Reasoning: `low`; `max_completion_tokens: 4096` covers reasoning plus answer text.
+- Missing answer text and token-limit truncation are explicit errors; reasoning and partial answers are never delivered.
 - Image input: ordered Base64 data URLs in Chat Completions content parts
 
 Both clients accept zero through five images in capture order. If the selected provider returns an error after its own retry handling, the app logs the failure and produces no command output. It does not call the other provider and does not paste the information transcript as an error fallback. An empty spoken instruction remains a pre-request case and delivers the information transcript locally.

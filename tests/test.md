@@ -45,7 +45,9 @@ Report every skipped live check explicitly. Do not put keys, screenshots, or tra
 
 ### Cerebras Client
 
-- Uses only `https://api.cerebras.ai/v1/chat/completions` and `gemma-4-31b`.
+- Uses only `https://api.cerebras.ai/v1/chat/completions` and `qwen-3.8-27b`.
+- Sends `reasoning_effort: low` and `max_completion_tokens: 4096`.
+- Rejects reasoning-only, null/missing-content, and token-limit-truncated responses without delivering partial text or reasoning.
 - Supports zero images and preserves one-to-five image order in Chat Completions content parts.
 - Decodes output and handles malformed or empty responses as errors.
 - Retries HTTP `429`, `5xx`, and timeout once.
