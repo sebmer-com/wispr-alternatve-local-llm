@@ -35,7 +35,7 @@ def main() -> int:
     required = [
         ("final class OpenAIResponsesClient", "single Responses API client is missing"),
         ('https://api.openai.com/v1/responses', "fixed Responses API endpoint is missing"),
-        ('gpt-5.6-luna', "fixed Luna model is missing"),
+        ('gpt-6-luna', "fixed Luna model is missing"),
         ('reasoningEffort = "low"', "low reasoning configuration is missing"),
         ('apiKeyEnvironmentName = "OPENAI_API_KEY"', "OPENAI_API_KEY contract is missing"),
         ('imageDetail = "low"', "low-detail screenshot constant is missing"),

@@ -30,7 +30,7 @@ final class OpenAIResponsesClientTests: XCTestCase {
         XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
         let json = try requestJSON(request)
-        XCTAssertEqual(json["model"] as? String, "gpt-5.6-luna")
+        XCTAssertEqual(json["model"] as? String, "gpt-6-luna")
         XCTAssertEqual(json["store"] as? Bool, false)
         XCTAssertEqual((json["reasoning"] as? [String: Any])?["effort"] as? String, "low")
         XCTAssertEqual((json["text"] as? [String: Any])?["verbosity"] as? String, "low")
@@ -222,7 +222,7 @@ final class OpenAIResponsesClientTests: XCTestCase {
         let logs = capture.joined
         XCTAssertTrue(logs.contains("request_id="))
         XCTAssertTrue(logs.contains("provider=openai"))
-        XCTAssertTrue(logs.contains("model=gpt-5.6-luna"))
+        XCTAssertTrue(logs.contains("model=gpt-6-luna"))
         XCTAssertTrue(logs.contains("prompt_chars=10"))
         XCTAssertTrue(logs.contains("image_count=1"))
         XCTAssertTrue(logs.contains("timeout_seconds=1.000"))

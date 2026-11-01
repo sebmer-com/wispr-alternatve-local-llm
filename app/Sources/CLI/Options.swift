@@ -227,7 +227,8 @@ struct Options {
             Control + Option is selected during setup: Markdown Dump writes the transcript plus optional P screenshots, while Hermes sends one spoken instruction plus optional P screenshots to a visible Hermes session.
             In Markdown mode, release Control first while holding Option to record a provider command. The provider receives text only; its result and the captured screenshots are written to Markdown.
             After launch, type go and stop in the app Terminal for stop-triggered Obsidian recording. Press Tab to autocomplete terminal commands.
-            Choose OpenAI Responses with fixed gpt-5.6-luna, low reasoning, and low-detail screenshots, or Cerebras with fixed qwen-3.8-27b. OpenClaw is not a runtime option.
+            Choose OpenAI gpt-6-luna or Anthropic claude-haiku-5-5 with an existing Hermes login or a separate API key. Models are configurable in setup. Cerebras qwen-3.8-27b uses an API key.
+            Hermes command mode calls only the model, not agent tools. API keys are billed separately; Anthropic OAuth requires Max plus extra usage credits. No automatic provider or billing fallback.
             Bluetooth push-to-talk is disabled by default; enable it in setup and choose a shortcut key.
 
             Options:
@@ -253,7 +254,7 @@ struct Options {
               setup                         Run the guided onboarding wizard.
               config                        Open the interactive configuration menu.
               config show                   Print a masked configuration summary.
-              config doctor                 Check config, API key, Bluetooth, paths, and permissions.
+              config doctor                 Check config, selected login/model, Bluetooth, paths, and permissions.
               config reset --yes             Hard reset user config, support files, and local .env.
             """
         )

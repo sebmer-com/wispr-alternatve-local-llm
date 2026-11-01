@@ -48,6 +48,8 @@ def validate_config() -> bool:
         errors.append("legacy skills configuration must be removed")
     if config.get("command_provider") != "openai":
         errors.append("command_provider must default to openai")
+    if config.get("command_auth") != "hermes" or config.get("command_model") != "gpt-6-luna":
+        errors.append("new installs must default to Hermes login with gpt-6-luna")
     if config.get("control_option_mode") != "dump":
         errors.append("control_option_mode must default to dump")
     if "enabled" in config.get("hermes_agent", {}):
@@ -135,11 +137,15 @@ def main() -> int:
         action="store_true",
         help="Run optional five-image live checks for configured provider credentials.",
     )
+    parser.add_argument("--skip-xctest", action="store_true", help="Explicitly skip XCTest when only Command Line Tools are installed; standalone client checks still run.")
     args = parser.parse_args()
 
     checks = [
         run("swift build", ["swift", "build"], cwd=APP_DIR),
-        run("swift tests", ["swift", "test"], cwd=APP_DIR),
+        *([run("swift tests", ["swift", "test"], cwd=APP_DIR)] if not args.skip_xctest else []),
+        run("Hermes bridge offline tests", [sys.executable, "tests/hermes_bridge_case.py"]),
+        run("subscription setup tests", [sys.executable, "tests/subscription_setup_case.py"]),
+        run("standalone Swift client tests", [sys.executable, "tests/subscription_client_case.py"]),
         run("config JSON", ["python3", "-m", "json.tool", "config/config.json"]),
         run("prompt JSON", ["python3", "-m", "json.tool", "config/promptConfig.json"]),
         run("text replacements JSON", ["python3", "-m", "json.tool", "config/textReplacements.json"]),
@@ -163,6 +169,8 @@ def main() -> int:
         run("command provider piped onboarding regression", ["python3", "tests/command_provider_wizard_case.py"]),
         run("text replacement static regression", ["python3", "tests/text_replacement_static_case.py"]),
     ]
+    if args.skip_xctest:
+        print(color("SKIP XCTest (--skip-xctest; requires full Xcode)", "33"))
     if not args.skip_llm:
         checks.append(run("OpenAI Responses command smoke regression", ["python3", "tests/openai_responses_live_case.py"], timeout=60))
         checks.append(run("OpenAI Responses command translation regression", ["python3", "tests/translation_case.py"], timeout=150))

@@ -910,7 +910,7 @@ final class PushToTalkController: @unchecked Sendable {
                     fputs("command result failed: \(error)\n", stderr)
                     let retained = retainFailedInteraction(
                         provider: options.config.commandProvider.displayName,
-                        model: options.config.commandProvider.model,
+                        model: options.config.effectiveCommandModel,
                         information: information,
                         command: command,
                         error: error,
@@ -2017,12 +2017,17 @@ struct FluidPushToTalk {
 
     private static func makeCommandLLMClient(options: Options) -> any CommandLLMClient {
         let config = options.config
+        if config.commandAuth == .hermes {
+            return HermesCommandClient(provider: config.hermesCommandProvider, model: config.effectiveCommandModel)
+        }
         let apiKey = config.commandProvider.resolveAPIKey(configURL: options.activeConfigURL)
         switch config.commandProvider {
         case .openAI:
-            return OpenAIResponsesClient(apiKey: apiKey)
+            return OpenAIResponsesClient(apiKey: apiKey, model: config.effectiveCommandModel)
         case .cerebras:
             return CerebrasChatCompletionsClient(apiKey: apiKey)
+        case .anthropic:
+            return AnthropicMessagesClient(apiKey: apiKey, model: config.effectiveCommandModel)
         }
     }
 
@@ -2048,7 +2053,7 @@ struct FluidPushToTalk {
             """
             Output-Konfiguration: \(options.activeConfigURL.path)
               Audio Input: \(audioInput)
-              Command LLM: \(options.config.commandProvider.displayName) \(options.config.commandProvider.model), optional P screenshots
+              Command LLM: \(options.config.commandProvider.displayName) \(options.config.effectiveCommandModel), optional P screenshots
               \(options.config.hotkeys.paste.displayName): \(pasteOutput.locationDisplayName) -> \(pasteOutput.destinationDisplayName)\(pasteOutput == .bluetoothKeyboard ? " (Port: \(bluetoothPort))" : "")
               \(controlOptionLine)
             \(bluetoothLine)

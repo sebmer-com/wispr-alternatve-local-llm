@@ -7,11 +7,13 @@ enum AppInfo {
 enum CommandProvider: String, Codable {
     case openAI = "openai"
     case cerebras
+    case anthropic
 
     var displayName: String {
         switch self {
         case .openAI: return "OpenAI"
         case .cerebras: return "Cerebras"
+        case .anthropic: return "Anthropic"
         }
     }
 
@@ -19,6 +21,7 @@ enum CommandProvider: String, Codable {
         switch self {
         case .openAI: return OpenAISecrets.model
         case .cerebras: return CerebrasSecrets.model
+        case .anthropic: return "claude-haiku-5-5"
         }
     }
 
@@ -26,12 +29,18 @@ enum CommandProvider: String, Codable {
         switch self {
         case .openAI: return OpenAISecrets.apiKeyEnvironmentName
         case .cerebras: return CerebrasSecrets.apiKeyEnvironmentName
+        case .anthropic: return "ANTHROPIC_API_KEY"
         }
     }
 
     func resolveAPIKey(configURL: URL) -> String {
         ProviderSecrets.resolveAPIKey(named: apiKeyEnvironmentName, configURL: configURL)
     }
+}
+
+enum CommandAuth: String, Codable {
+    case apiKey = "api_key"
+    case hermes
 }
 
 enum ControlOptionMode: String, Codable {
@@ -62,6 +71,14 @@ struct AppConfig: Codable {
     var llmOutput = LLMOutputConfig()
     var bluetoothKeyboard = BluetoothKeyboardConfig()
     var commandProvider = CommandProvider.openAI
+    var commandAuth = CommandAuth.hermes
+    var commandModel = "gpt-6-luna"
+
+    var effectiveCommandModel: String { commandModel }
+
+    var hermesCommandProvider: String {
+        commandProvider == .openAI ? "openai-codex" : commandProvider.rawValue
+    }
     var controlOptionMode = ControlOptionMode.dump
     var prompts = PromptConfig()
     var textReplacements = TextReplacementConfig()
@@ -82,6 +99,8 @@ struct AppConfig: Codable {
         case llmOutput = "llm_output"
         case bluetoothKeyboard = "bluetooth_keyboard"
         case commandProvider = "command_provider"
+        case commandAuth = "command_auth"
+        case commandModel = "command_model"
         case controlOptionMode = "control_option_mode"
     }
 
@@ -116,10 +135,23 @@ struct AppConfig: Codable {
             CommandProvider.self,
             forKey: .commandProvider
         ) ?? .openAI
+        // Existing configs keep API-key authentication; only new setup defaults to Hermes.
+        commandAuth = try container.decodeIfPresent(CommandAuth.self, forKey: .commandAuth) ?? .apiKey
+        commandModel = try container.decodeIfPresent(String.self, forKey: .commandModel) ?? commandProvider.model
+        guard Self.isValidCommandModel(commandModel) else {
+            throw DecodingError.dataCorruptedError(forKey: .commandModel, in: container, debugDescription: "Invalid command_model identifier")
+        }
+        guard commandProvider != .cerebras || (commandAuth == .apiKey && commandModel == CerebrasSecrets.model) else {
+            throw DecodingError.dataCorruptedError(forKey: .commandAuth, in: container, debugDescription: "Cerebras requires api_key authentication and qwen-3.8-27b")
+        }
         controlOptionMode = try container.decodeIfPresent(
             ControlOptionMode.self,
             forKey: .controlOptionMode
         ) ?? .dump
+    }
+
+    static func isValidCommandModel(_ value: String) -> Bool {
+        value.range(of: "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$", options: .regularExpression) != nil
     }
 
     static func load(from url: URL?) throws -> AppConfig {
@@ -409,7 +441,7 @@ struct BluetoothKeyboardConfig: Codable {
 
 enum OpenAISecrets {
     static let endpoint = URL(string: "https://api.openai.com/v1/responses")!
-    static let model = "gpt-5.6-luna"
+    static let model = "gpt-6-luna"
     static let reasoningEffort = "low"
     static let imageDetail = "low"
     static let apiKeyEnvironmentName = "OPENAI_API_KEY"

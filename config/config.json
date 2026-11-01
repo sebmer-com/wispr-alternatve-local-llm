@@ -2,6 +2,8 @@
   "prompt_config_file": "promptConfig.json",
   "text_replacements_file": "textReplacements.json",
   "command_provider": "openai",
+  "command_auth": "hermes",
+  "command_model": "gpt-6-luna",
   "control_option_mode": "dump",
   "debug": {
     "enabled": false

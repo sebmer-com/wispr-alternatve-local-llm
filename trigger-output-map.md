@@ -1,7 +1,5 @@
 # Trigger- und Output-Landkarte
 
-Stand: 2026-08-24
-
 ## Trigger-Matrix
 
 | Trigger | Verarbeitung | Ausgabe |
@@ -29,29 +27,33 @@ Stand: 2026-08-24
 
 ## Control-Option-Auswahl
 
-`control_option_mode` ist `dump` oder `hermes`. Fehlende Legacy-Werte verwenden `dump`; die installierte User-Config auf diesem Mac waehlt `hermes`.
+`control_option_mode` ist `dump` oder `hermes`. Fehlende Legacy-Werte und neue Konfigurationen verwenden `dump`.
 
 - `dump`: Dauerhafte Bilder liegen unter `attachments/YYYY-MM-DD/` relativ zur Note und werden als `![Screenshot N](...)` eingebettet.
 - `hermes`: Genau ein Transkript wird zur Instruction. Geordnete Bilder werden mit `/image "<absoluter Pfad>"` angehaengt, bevor der Prompt gesendet wird.
 - OpenClaw ist keine angebotene Runtime; `hermes claw` ist nur ein Migrationswerkzeug.
 
-## Provider-Auswahl
+## Provider-, Login- und Modellauswahl
 
-`command_provider` ist entweder:
+`command_provider`, `command_auth` und `command_model` waehlen Provider, Anmeldung und exakte Modell-ID getrennt. Neue Installationen verwenden `openai` / `hermes` / `gpt-6-luna` ohne App-API-Key. Bestehende Konfigurationen ohne `command_auth` behalten `api_key`; explizit gespeicherte Modelle werden nicht ersetzt.
 
-- `openai`: `https://api.openai.com/v1/responses`, `gpt-5.6-luna`, Reasoning `low`, Text-Verbosity `low`, `store: false`, Bilder mit `detail: low`.
-- `cerebras`: `https://api.cerebras.ai/v1/chat/completions`, `qwen-3.8-27b`, geordnete Bild-Data-URLs.
+- `openai` mit `hermes`: vorhandener Hermes-Login `openai-codex`, konfiguriertes `gpt-*`-Modell; Standard `gpt-6-luna`.
+- `openai` mit `api_key`: native Responses API, konfiguriertes Modell, Reasoning `low`, Text-Verbosity `low`, `store: false`, Bilder mit `detail: low`.
+- `anthropic` mit `hermes`: vorhandener Hermes-Anthropic-OAuth-Login und konfiguriertes `claude-*`-Modell; Standard `claude-haiku-5-5`.
+- `anthropic` mit `api_key`: native Messages API und `ANTHROPIC_API_KEY`; Haiku 5.5 mit adaptivem Thinking und Effort `low`. Nur finale Textbloecke werden ausgeliefert.
+- `cerebras`: nur `api_key`, Chat Completions mit `qwen-3.8-27b`, niedriger Reasoning-Aufwand, 4096 Completion-Tokens und geordnete Bild-Data-URLs.
 
-Der Repository-Default ist `openai`. Die installierte User-Config auf diesem Mac ueberschreibt ihn mit `cerebras`. Setup schreibt nur die Auswahl in die User-Config und aktualisiert nur den dazugehoerigen Key in der benachbarten `.env`:
+Aenderungen erfolgen ueber `fluid-push-to-talk setup`, `config` → Edit core setup oder die App-Konfiguration. Nur API-Key-Modus fragt einen versteckten Key ab. Vorhandene Keys anderer Provider bleiben erhalten; siehe [README](README.md#setup-and-provider-selection) fuer JSON-Beispiele und Login-Anleitung.
 
-- OpenAI: `OPENAI_API_KEY`
-- Cerebras: `CEREBRAS_API_KEY`
+Die Modell-Bridge verwendet Hermes-Anmeldung und Token-Refresh, respektiert `HERMES_HOME`, kopiert keine Tokens und aendert nicht das Hermes-Standardmodell. Sie startet keinen Agenten und keine Tools; der sichtbare Hermes-Agent-Hotkey bleibt separat.
 
-Ein Request verwendet ausschließlich den ausgewaehlten Provider. Nach einem Provider-Fehler gibt es weder einen Aufruf des anderen Providers noch Informationstext als Output. Eine leere Anweisung wird vor dem Request erkannt und liefert weiterhin die Information lokal aus.
+Ein ChatGPT-Abo ist kein oeffentlicher API-Key und enthaelt kein Claude. Anthropic-OAuth benoetigt laut Hermes-Dokumentation Claude Max mit zusaetzlich gekauften Extra-Usage-Credits; API-Keys werden separat nach Nutzung abgerechnet. Es gibt keinen automatischen Provider-, Login- oder kostenpflichtigen Fallback. Modell-ID, Anmeldung und Live-Katalog ersetzen keinen Inferenztest; `config doctor` meldet den jeweils geprueften Umfang.
+
+Nach einem Provider-Fehler gibt es keinen Informationstext als Ersatz-Output. Eine leere Anweisung wird vor dem Request erkannt und liefert weiterhin die Information lokal aus.
 
 ## Request-Diagnose
 
-OpenAI und Cerebras schreiben dasselbe strukturierte, schluesselwertbasierte Logformat. Eine logische `request_id` verbindet:
+Native HTTP-Clients schreiben strukturierte, schluesselwertbasierte Logs. Eine logische `request_id` verbindet:
 
 - Request: Provider, Modell, gesamte/System/User-Prompt-Zeichen, Bildanzahl, Payload-Bytes, Build-Dauer in ms und Timeout.
 - Bild: Index, lokaler Pfad, Bytes, MIME, Base64-Zeichenanzahl und SHA-256.
@@ -59,7 +61,7 @@ OpenAI und Cerebras schreiben dasselbe strukturierte, schluesselwertbasierte Log
 - Retry: Grund `timeout`, `http_429` oder `http_5xx`.
 - Terminaler Fehler: `NSError`-Domain und numerischer Code.
 
-Die Logs enthalten keinen API-Key, keinen `Authorization`-Header und keinen rohen Base64-Inhalt. Beim Timeout sind der fehlgeschlagene Versuch, `retry_reason=timeout`, der naechste Versuch und gegebenenfalls der terminale Fehler unter derselben logischen ID sichtbar.
+Die Logs enthalten keinen API-Key, kein OAuth-Token, keinen `Authorization`-Header und keinen rohen Base64-Inhalt. Die Bridge loggt nur sichere Request-Metadaten, nicht zwangslaeufig die nativen HTTP-Felder. Beim Timeout sind der fehlgeschlagene Versuch, `retry_reason=timeout`, der naechste Versuch und gegebenenfalls der terminale Fehler unter derselben logischen ID sichtbar.
 
 ## Letzter fehlgeschlagener Command
 
@@ -102,7 +104,20 @@ app/.build/debug/fluid-push-to-talk \
   --test-command-image screenshot.png
 ```
 
-Optionale Live-Checks fuer beide Provider mit fuenf Bildern:
+Offline-Checks mit Command Line Tools (XCTest explizit ausgelassen; fuer die volle Swift-Testsuite wird Xcode benoetigt):
+
+```bash
+python3 tests/run_all.py --skip-llm --skip-xctest
+```
+
+Optionale Abo-Livetests mit synthetischem Text und fuenf generierten PNGs (verbrauchen Provider-Kontingent beziehungsweise Anthropic-Extra-Credits):
+
+```bash
+python3 tests/hermes_subscription_live_case.py --provider openai
+python3 tests/hermes_subscription_live_case.py --provider anthropic
+```
+
+Optionale separat abgerechnete API-Key-Livetests fuer OpenAI und Cerebras mit fuenf Bildern:
 
 ```bash
 python3 tests/run_all.py --skip-llm --live-multi-image

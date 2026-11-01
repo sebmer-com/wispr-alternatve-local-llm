@@ -53,7 +53,7 @@ def main() -> int:
 
     one_liner = (
         "curl -fsSL https://raw.githubusercontent.com/sebmer-com/wispr-alternatve-local-llm/main/github-install.sh "
-        "| bash -s -- --reset-state --setup"
+        "| bash -s -- --setup"
     )
     failed |= require(one_liner in readme, "README must document the customer one-line installer")
 
