@@ -24,7 +24,7 @@ enum ConfigWizard {
         )
         configureASR(config: &config, input: input)
         configurePasteShortcut(config: &config, input: input)
-        configureCommandProvider(config: &config, input: input)
+        try configureCommandProvider(config: &config, input: input)
         configureProviderKey(config: config, input: input, secretUpdates: &secretUpdates)
         configureControlOptionMode(config: &config, input: input)
         explainScreenRecording(input: input)
@@ -152,8 +152,13 @@ enum ConfigWizard {
             ? config.llmOutput.bluetooth.rawValue
             : "\(config.llmOutput.bluetooth.rawValue) (inactive)"
         print("Outputs: paste=\(config.llmOutput.paste.rawValue), dump=\(config.llmOutput.dump.rawValue), bluetooth=\(bluetoothOutput)")
-        print("Command LLM: \(providerSummary(config.commandProvider))")
-        print("API key \(config.commandProvider.apiKeyEnvironmentName): \(masked(config.commandProvider.resolveAPIKey(configURL: paths.configURL)))")
+        print("Command LLM: \(providerSummary(config))")
+        print("Command model: \(config.effectiveCommandModel)")
+        if config.commandAuth == .hermes {
+            print("Authentication: existing Hermes login (\(config.hermesCommandProvider)); no app API key")
+        } else {
+            print("API key \(config.commandProvider.apiKeyEnvironmentName): \(masked(config.commandProvider.resolveAPIKey(configURL: paths.configURL)))")
+        }
         print("Screen Recording permission: \(CGPreflightScreenCaptureAccess() ? "granted" : "missing (text-only fallback remains available)")")
         print("Daily note: \(config.dump.markdownURL.path)")
     }
@@ -206,18 +211,23 @@ enum ConfigWizard {
         checks.append(.init(
             name: "Command provider",
             passed: true,
-            detail: providerSummary(config.commandProvider)
+            detail: providerSummary(config)
         ))
         checks.append(.init(
             name: "Control + Option mode",
             passed: true,
             detail: config.controlOptionMode.displayName
         ))
-        checks.append(.init(
-            name: "\(config.commandProvider.displayName) API key",
-            passed: !config.commandProvider.resolveAPIKey(configURL: paths.configURL).isEmpty,
-            detail: "\(config.commandProvider.apiKeyEnvironmentName) in environment or \(paths.dotenvURL.path)"
-        ))
+        if config.commandAuth == .hermes {
+            let result = HermesCommandClient.doctor(provider: config.hermesCommandProvider, model: config.effectiveCommandModel)
+            checks.append(.init(name: "Hermes command login and model", passed: result.passed, detail: result.detail))
+        } else {
+            checks.append(.init(
+                name: "\(config.commandProvider.displayName) API key",
+                passed: !config.commandProvider.resolveAPIKey(configURL: paths.configURL).isEmpty,
+                detail: "\(config.commandProvider.apiKeyEnvironmentName) in environment or \(paths.dotenvURL.path); model access unverified until a request succeeds"
+            ))
+        }
 
         if config.controlOptionMode == .hermes {
             let executable = hermesExecutableCheck(config.hermesAgent.executable)
@@ -372,18 +382,48 @@ enum ConfigWizard {
         }
     }
 
-    private static func configureCommandProvider(config: inout AppConfig, input: WizardInput) {
-        let providers: [CommandProvider] = [.openAI, .cerebras]
-        let defaultIndex = providers.firstIndex(of: config.commandProvider) ?? 0
+    private static func configureCommandProvider(config: inout AppConfig, input: WizardInput) throws {
+        let providers: [CommandProvider] = [.openAI, .cerebras, .anthropic]
+        let previous = config.commandProvider
         let choice = input.choose(
             prompt: "Choose command provider",
             options: [
-                "OpenAI — gpt-5.6-luna, low reasoning, low-detail screenshots",
-                "Cerebras — qwen-3.8-27b",
+                "OpenAI — GPT-6 Luna (existing ChatGPT/Codex login or API key)",
+                "Cerebras — qwen-3.8-27b (API key)",
+                "Anthropic — Claude Haiku 5.5 (existing Hermes login or API key)",
             ],
-            defaultIndex: defaultIndex
+            defaultIndex: providers.firstIndex(of: previous) ?? 0
         )
         config.commandProvider = providers[choice]
+        if config.commandProvider != previous {
+            config.commandModel = config.commandProvider.model
+            config.commandAuth = config.commandProvider == .cerebras ? .apiKey : .hermes
+        }
+        if config.commandProvider == .cerebras {
+            config.commandAuth = .apiKey
+            config.commandModel = CerebrasSecrets.model
+            return
+        }
+        if config.commandProvider == .anthropic {
+            print("Claude is not included in your ChatGPT subscription. Hermes Anthropic OAuth requires Claude Max plus purchased extra usage credits; API keys are billed separately. No automatic paid fallback.")
+        }
+        let choiceAuth = input.choose(
+            prompt: "Choose authentication",
+            options: [
+                "Existing Hermes login — no API key copied into this app",
+                "Provider API key — separate usage-based billing",
+            ],
+            defaultIndex: config.commandAuth == .hermes ? 0 : 1
+        )
+        config.commandAuth = choiceAuth == 0 ? .hermes : .apiKey
+        let model = input.prompt("Command model ID", defaultValue: config.commandModel)
+        guard AppConfig.isValidCommandModel(model) else {
+            throw CliError.invalidValue("Invalid command model ID; use the exact provider model identifier")
+        }
+        config.commandModel = model
+        if config.commandAuth == .hermes {
+            print("Uses the selected provider's existing Hermes login and token refresh. If missing, run: hermes auth add \(config.hermesCommandProvider)\(config.commandProvider == .anthropic ? " --type oauth" : "")")
+        }
     }
 
     private static func configureProviderKey(
@@ -391,6 +431,7 @@ enum ConfigWizard {
         input: WizardInput,
         secretUpdates: inout [String: String]
     ) {
+        guard config.commandAuth == .apiKey else { return }
         let provider = config.commandProvider
         let token = input.secret(
             "\(provider.displayName) API key for \(provider.apiKeyEnvironmentName) (hidden; leave blank to keep current)"
@@ -601,7 +642,7 @@ enum ConfigWizard {
         printHeader("Review")
         print("Config: \(paths.configURL.path)")
         print("ASR language: \(asrLanguageSummary(config.asr.language))")
-        print("Command LLM: \(providerSummary(config.commandProvider))")
+        print("Command LLM: \(providerSummary(config))")
         print("Paste shortcut: \(config.hotkeys.paste.displayName) -> \(config.llmOutput.paste.rawValue)")
         print("Control + Option: \(config.hotkeys.dump.displayName) -> \(config.controlOptionMode.displayName)")
         if includeOptionalFeatures {
@@ -627,13 +668,9 @@ enum ConfigWizard {
         AsrLanguageResolver.resolve(language).displayValue
     }
 
-    private static func providerSummary(_ provider: CommandProvider) -> String {
-        switch provider {
-        case .openAI:
-            return "OpenAI Responses \(OpenAISecrets.model), reasoning=\(OpenAISecrets.reasoningEffort), screenshots=up to 5, detail=\(OpenAISecrets.imageDetail)"
-        case .cerebras:
-            return "Cerebras Chat Completions \(CerebrasSecrets.model), screenshots=up to 5"
-        }
+    private static func providerSummary(_ config: AppConfig) -> String {
+        let auth = config.commandAuth == .hermes ? "Hermes login" : "API key"
+        return "\(config.commandProvider.displayName) \(config.effectiveCommandModel), \(auth), screenshots=up to 5"
     }
 
     private static func hermesSummary(_ config: AppConfig) -> String {

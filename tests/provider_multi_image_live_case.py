@@ -41,6 +41,8 @@ def main() -> int:
 
     config = json.loads((REPO_ROOT / "config" / "config.json").read_text(encoding="utf-8"))
     config["command_provider"] = args.provider
+    config["command_auth"] = "api_key"
+    config["command_model"] = "gpt-6-luna" if args.provider == "openai" else "qwen-3.8-27b"
     config["prompt_config_file"] = str(REPO_ROOT / "config" / "promptConfig.json")
     with tempfile.TemporaryDirectory() as temp_dir:
         root = Path(temp_dir)

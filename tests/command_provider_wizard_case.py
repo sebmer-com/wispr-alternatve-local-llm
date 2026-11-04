@@ -17,7 +17,8 @@ def run_setup(provider_choice: str, selected_key: str, mode_choice: str, existin
         # Language default, paste shortcut default, provider, hidden key,
         # Control + Option mode, optional dump path, save confirmation.
         dump_path_answer = "\n" if mode_choice == "1" else ""
-        input_text = f"\n\n{provider_choice}\n{selected_key}\n{mode_choice}\n{dump_path_answer}y\n"
+        auth_and_model = "2\n\n" if provider_choice in {"1", "3"} else ""
+        input_text = f"\n\n{provider_choice}\n{auth_and_model}{selected_key}\n{mode_choice}\n{dump_path_answer}y\n"
         completed = subprocess.run(
             [str(BINARY), "setup", "--config", str(config_path)],
             cwd=REPO_ROOT,

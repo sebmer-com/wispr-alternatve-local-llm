@@ -1,7 +1,7 @@
 import Foundation
 
 final class OpenAIResponsesClient: CommandLLMClient, @unchecked Sendable {
-    static let model = "gpt-5.6-luna"
+    static let model = "gpt-6-luna"
     static let endpoint = URL(string: "https://api.openai.com/v1/responses")!
     static let reasoningEffort = "low"
     static let imageDetail = "low"
@@ -9,17 +9,19 @@ final class OpenAIResponsesClient: CommandLLMClient, @unchecked Sendable {
 
     private let apiKey: String
     private let requestURL: URL
+    private let configuredModel: String
     private let session: URLSession
     private let requestTimeout: TimeInterval
     private let maxRetries: Int
     private let logger: @Sendable (String) -> Void
 
     var displayName: String {
-        "OpenAI \(Self.model)"
+        "OpenAI \(configuredModel)"
     }
 
     init(
         apiKey: String,
+        model: String = OpenAIResponsesClient.model,
         endpoint: URL = OpenAIResponsesClient.endpoint,
         session: URLSession = .shared,
         requestTimeout: TimeInterval = 30,
@@ -28,6 +30,7 @@ final class OpenAIResponsesClient: CommandLLMClient, @unchecked Sendable {
     ) {
         self.apiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         requestURL = endpoint
+        configuredModel = model
         self.session = session
         self.requestTimeout = requestTimeout
         self.maxRetries = max(0, maxRetries)
@@ -54,7 +57,7 @@ final class OpenAIResponsesClient: CommandLLMClient, @unchecked Sendable {
             logger: logger,
             requestID: requestID,
             provider: "openai",
-            model: Self.model,
+            model: configuredModel,
             systemPrompt: systemPrompt,
             userPrompt: userPrompt,
             attachments: attachments,
@@ -138,7 +141,7 @@ final class OpenAIResponsesClient: CommandLLMClient, @unchecked Sendable {
         })
 
         let payload = ResponsesRequest(
-            model: Self.model,
+            model: configuredModel,
             instructions: systemPrompt,
             input: [.init(role: "user", content: content)],
             reasoning: .init(effort: Self.reasoningEffort),

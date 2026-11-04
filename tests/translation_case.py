@@ -70,6 +70,9 @@ def validate(completed: subprocess.CompletedProcess[str]) -> bool:
 
 def main() -> int:
     config = json.loads((REPO_ROOT / "config" / "config.json").read_text(encoding="utf-8"))
+    config["command_provider"] = "openai"
+    config["command_auth"] = "api_key"
+    config["command_model"] = "gpt-6-luna"
     config["prompt_config_file"] = str(REPO_ROOT / "config" / "promptConfig.json")
     api_key = resolve_api_key()
     if not api_key:

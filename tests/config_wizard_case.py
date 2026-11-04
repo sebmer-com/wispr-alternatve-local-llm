@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 import json
 import stat
 import subprocess
@@ -58,7 +59,7 @@ def main() -> int:
         ("} else {\n            normalizeInstallLocalDefaults(&config)", wizard, "install-only defaults must apply only to new configs"),
         ('case commandProvider = "command_provider"', config_source, "command_provider config key is missing"),
         ('case controlOptionMode = "control_option_mode"', config_source, "control_option_mode config key is missing"),
-        ("gpt-5.6-luna", options, "CLI help must explain the OpenAI model"),
+        ("gpt-6-luna", options, "CLI help must explain the OpenAI model"),
         ("qwen-3.8-27b", options, "CLI help must explain the Cerebras model"),
     ]:
         failed |= require(needle in source, message)
@@ -99,7 +100,7 @@ def main() -> int:
 
         setup = run(
             ["setup", "--config", str(config_path)],
-            input_text="\n\n1\nsk-new-secret-1234\n1\n\ny\n",
+            input_text="\n\n1\n2\n\nsk-new-secret-1234\n1\n\ny\n",
         )
         failed |= require(setup.returncode == 0, "piped core setup failed")
         saved = json.loads(config_path.read_text(encoding="utf-8"))

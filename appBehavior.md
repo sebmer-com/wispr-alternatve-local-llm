@@ -27,18 +27,23 @@
 
 ## Provider Behavior
 
-`command_provider` selects exactly one client:
+Each command selects one explicit `command_provider`, `command_auth`, and `command_model` combination:
 
-- `openai`: Responses API, `gpt-5.6-luna`, `reasoning.effort: low`, `text.verbosity: low`, `store: false`, and `detail: low` image inputs.
+- `openai`: default model `gpt-6-luna`. `hermes` authentication uses the existing Hermes `openai-codex` login. `api_key` uses the native Responses API with the configured model, `reasoning.effort: low`, `text.verbosity: low`, `store: false`, and `detail: low` image inputs.
+- `anthropic`: default model `claude-haiku-5-5`. `hermes` uses the existing Hermes Anthropic OAuth login; `api_key` uses the native Messages API with `ANTHROPIC_API_KEY`, the configured model, and ordered image inputs. The default ID does not guarantee model/account access.
 - `cerebras`: Chat Completions, `qwen-3.8-27b`, low reasoning, 4096 completion tokens including reasoning, with ordered image data URLs. Missing answer text and token-limit truncation fail without delivery.
 
-The repository default is `openai`; this Mac's installed user config overrides it to `cerebras`. Keys come from the process environment or `.env` beside the active config.
+Fresh defaults are `openai` / `hermes` / `gpt-6-luna`, with no app API key. Legacy configs missing `command_auth` keep `api_key` behavior; explicitly saved model IDs are not replaced automatically. Cerebras remains API-key-only. Change provider/auth/model together through `fluid-push-to-talk setup` or `fluid-push-to-talk config` → Edit core setup, or edit app config JSON; see [README](README.md#setup-and-provider-selection) for explicit examples and official references.
 
-If a provider request fails, the app emits no command result. It does not call the other provider and does not deliver the information transcript as a provider-error fallback. If the instruction is empty before any request, it still delivers the information transcript.
+Hermes authentication requires a compatible existing Hermes runtime, delegates credentials and refresh to Hermes, inherits `HERMES_HOME`, and does not copy secrets or change Hermes' default model. This command bridge performs direct inference without agent/tools; it is distinct from the visible Hermes Agent shortcut. Exact same-provider `gpt-*` and `claude-*` model IDs are supported; selection does not prove account access. A subscription login is not a public API key, and account access and limits still apply. Anthropic OAuth requires Claude Max plus purchased extra usage credits, not the base Max allowance. Native OpenAI, Anthropic, and Cerebras API-key requests are separately usage-based billed; keys come from the environment or `.env` beside the active config. No automatic paid/authentication fallback is allowed.
+
+`config doctor` checks selected authentication and the Hermes model catalog, not necessarily a live inference request. Availability can be unknown; login/catalog checks must not be presented as proof the model works.
+
+If a provider request fails, the app emits no command result. It does not call another provider, switch authentication, or deliver the information transcript as a provider-error fallback. If the instruction is empty before any request, it still delivers the information transcript.
 
 ## Diagnostics and Failed-Turn Lifecycle
 
-For both providers, one logical `request_id` connects the request summary, image metadata, every attempt, retry decision, and terminal failure. Logs expose prompt lengths, image path/size/MIME/Base64 length/SHA-256, payload size/build time, configured timeout, attempt `n/max`, duration/outcome, HTTP status, response bytes, provider request ID, retry reason, and final `NSError` domain/code. They exclude API keys, `Authorization`, and raw Base64 content.
+Command diagnostics use one logical `request_id` to connect the request summary, image metadata, attempts, retry decisions, and terminal failure. Native HTTP logs expose prompt lengths, image path/size/MIME/Base64 length/SHA-256, payload size/build time, configured timeout, attempt `n/max`, duration/outcome, HTTP status, response bytes, provider request ID, retry reason, and final `NSError` domain/code. Logs exclude API keys, OAuth tokens, `Authorization`, and raw Base64 content; bridge logs must follow the same secret-safe boundary without claiming native HTTP fields are always available.
 
 On provider, Hermes, Markdown, or delivery failure, the app writes the newest failed turn to `~/Library/Application Support/fluid-push-to-talk/last-failed-command/`. The `0700` directory contains a `0600` `turn.json` and `0600` copies of captured images. A later failure replaces it through a staged backup-and-promote flow; startup recovery restores a valid backup after an interrupted promotion.
 
